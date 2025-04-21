@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Moayad Doughmosh - Object Remover (Multi-Tool)</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪄</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-theme="light">
+
+    <header class="header"> <div class="container header-content"> <div class="logo"> <i class="fas fa-magic"></i> AI Moayad Doughmosh - Object Remover </div> <nav class="nav"> <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle dark mode"> <i class="fas fa-sun"></i> <i class="fas fa-moon"></i> </button> <a href="#main-app">Try It</a> <a href="#about-me">About</a> </nav> </div> </header>
+
+    <main id="main-app" class="main-content">
+        <div class="container">
+            <h1>AI-Powered Object Removal (Multi-Tool BETA)</h1>
+            <p class="subtitle">Upload Image or Video. Select a tool and mark objects to remove.</p>
+             <p class="warning-note"><strong>Note:</strong> Video processing is experimental, very slow, uses static masks, and may produce artifacts.</p>
+
+            <div class="input-box card">
+                <h2>1. Upload Image or Video</h2>
+                <form id="api-form-file">
+                    <div id="drop-zone" class="drop-zone"> <i class="fas fa-cloud-upload-alt fa-3x drop-icon"></i> <p>Drag & drop file here or</p> <label for="image-upload" class="btn btn-secondary file-label-btn"> <i class="fas fa-file-import"></i> Choose File </label> <input type="file" id="image-upload" name="image_file" accept="image/*,video/mp4,video/webm,video/ogg,video/avi,video/mov,video/x-matroska" style="display: none;"> </div>
+
+                    <div id="preview-container" class="preview-container" style="display: none;">
+                        <h2>2. Mark Object(s) for Removal</h2>
+                        <p id="preview-instruction">Load a file to see preview.</p>
+                        <div class="tool-selection">
+                            <label><input type="radio" name="draw-tool" value="brush" checked> <i class="fas fa-paint-brush"></i><span> Brush</span></label>
+                            <label><input type="radio" name="draw-tool" value="box"> <i class="far fa-square"></i><span> Box</span></label>
+                            <label><input type="radio" name="draw-tool" value="polygon"> <i class="fas fa-draw-polygon"></i><span> Polygon</span></label>
+                        </div>
+                        <div class="brush-controls" id="brush-controls" style="display: block;"> <label for="brush-size">Brush Size:</label> <input type="range" id="brush-size" name="brush-size" min="1" max="50" value="10"> <span id="brush-size-value">10</span> px </div>
+                        <div class="polygon-controls" id="polygon-controls" style="display: none;"> <span id="polygon-instruction">Click to add points. Click first point or Finish button to close.</span> <button type="button" id="finish-polygon-btn" class="btn btn-info btn-small" style="display: none;"> <i class="fas fa-check"></i> Finish Polygon</button> </div>
+                        <div class="preview-wrapper"> <img id="image-preview" src="#" alt="Image Preview" style="display: none;"/> <video id="video-preview" controls muted loop playsinline style="display: none;"></video> <canvas id="draw-canvas"></canvas> </div>
+                        <div class="preview-controls"> <button type="button" id="undo-last-btn" class="btn btn-warning btn-small" style="display: none;"> <i class="fas fa-undo-alt"></i> Undo Last </button> <button type="button" id="clear-drawing-btn" class="btn btn-danger btn-small" style="display: none;"> <i class="fas fa-times-circle"></i> Clear All </button> <button type="button" id="clear-preview-btn" class="btn btn-cancel btn-small"> <i class="fas fa-trash-alt"></i> Change File </button> </div>
+                    </div>
+
+                     <h2>3. Process</h2>
+                     <button type="submit" id="process-btn" class="btn btn-primary btn-process" disabled> <i class="fas fa-magic"></i> Remove Objects </button>
+                </form>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display: none;"> <svg class="spinner-svg" viewBox="0 0 50 50"> <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle> </svg> <p>Processing... (Video may take a long time!)</p> </div>
+
+            <div id="results-box" class="results-box card" style="display: none;">
+                <h2>Results</h2>
+                <div id="error-message" class="error-message" style="display: none;"></div>
+                <div id="success-message">
+                    <p id="result-status"></p> <p id="result-message"></p> <div id="result-details"></div>
+                    <div class="result-image-container" style="display: none;"> <img id="result-image" src="" alt="Processed Image" style="display: none;"> </div>
+                    <div id="result-video-area" class="result-video-area" style="display: none;"> <p>Video processing finished:</p> <video id="result-video-player" controls muted loop playsinline style="display: none;"></video> </div>
+                    <a href="#" id="download-btn" class="btn btn-success" style="display: none;" download> <i class="fas fa-download"></i> Download Result </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section id="about-me" class="about-me-section"> <div class="container"> <h2>About Me</h2> <div class="about-content"> <div class="about-text"> <h3>Moayad Doughmosh</h3> <p>Multi-disciplinary professional...</p> <ul> <li><i class="fas fa-brain"></i> AI Eng Dev</li> <li><i class="fas fa-drafting-compass"></i> Survey/Civil Eng</li> <li><i class="fas fa-cube"></i> 3D Designer</li> <li><i class="fas fa-tools"></i> AI Tools Creator</li> </ul> <p>Passionate about tech.</p> </div> </div> </div> </section>
+    <footer class="footer"> <div class="container"> <p>© {{ current_year }} - Moayad Doughmosh</p> <div class="social-icons"> <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a> <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a> <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a> </div> </div> </footer>
+<style>
+    /* --- Basic Reset & Root Variables --- */
+:root { /* Light Theme */ --primary-color: #4a69bd; --secondary-color: #6a89cc; --accent-color: #f6b93b; --success-color: #28a745; --error-color: #dc3545; --cancel-color: #6c757d; --warning-color: #ffc107; --warning-hover-color: #e0a800; --danger-color: #dc3545; --danger-hover-color: #c82333; --info-color: #17a2b8; --info-hover-color: #138496; --bg-color: #f8f9fa; --bg-gradient: linear-gradient(135deg, #eef2f3, #f8f9fa); --card-bg: #ffffff; --text-color: #495057; --heading-color: #343a40; --border-color: #dee2e6; --shadow-color: rgba(0, 0, 0, 0.1); --spinner-color: var(--primary-color); --toggle-bg: #ccc; --toggle-indicator: white; --toggle-icon-light: var(--accent-color); --toggle-icon-dark: var(--secondary-color); --canvas-border-color: rgba(0, 0, 0, 0.2); --canvas-draw-color-brush: rgba(255, 0, 0, 0.7); --canvas-draw-color-box: rgba(0, 100, 255, 0.8); --canvas-draw-color-polygon: rgba(0, 200, 100, 0.8); /* Shared */ --font-family: 'Poppins', sans-serif; --border-radius: 8px; --box-shadow: 0 4px 15px var(--shadow-color); --transition-speed: 0.3s ease; --transition-color: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed); }
+/* --- Dark Theme --- */
+body[data-theme="dark"] { --primary-color: #5e80cc; --secondary-color: #7c99d5; --accent-color: #ffc107; --success-color: #34c38f; --error-color: #f46a6a; --cancel-color: #adb5bd; --warning-color: #ffca2c; --warning-hover-color: #ffda6a; --danger-color: #f46a6a; --danger-hover-color: #f67f7f; --info-color: #34d3e0; --info-hover-color: #54e0eb; --bg-color: #2a2f3a; --bg-gradient: linear-gradient(135deg, #2a2f3a, #303644); --card-bg: #353c4a; --text-color: #adb5bd; --heading-color: #e9ecef; --border-color: #495057; --shadow-color: rgba(0, 0, 0, 0.3); --spinner-color: var(--accent-color); --toggle-bg: var(--secondary-color); --toggle-indicator: var(--card-bg); --canvas-border-color: rgba(255, 255, 255, 0.2); --canvas-draw-color-brush: rgba(255, 77, 77, 0.7); --canvas-draw-color-box: rgba(100, 150, 255, 0.8); --canvas-draw-color-polygon: rgba(100, 220, 150, 0.8); }
+* { margin: 0; padding: 0; box-sizing: border-box; } html { scroll-behavior: smooth; } body { font-family: var(--font-family); color: var(--text-color); background-color: var(--bg-color); background-image: var(--bg-gradient); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; transition: var(--transition-color); } .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+/* Header */ .header { background: var(--card-bg); color: var(--heading-color); padding: 1rem 0; box-shadow: 0 2px 5px var(--shadow-color); position: sticky; top: 0; z-index: 1000; transition: background-color var(--transition-speed), color var(--transition-speed), box-shadow var(--transition-speed); } .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;} .logo { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--primary-color); flex-shrink: 0; } .logo i { color: var(--accent-color); } .nav { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;} .nav a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: color var(--transition-speed); } .nav a:hover { color: var(--primary-color); }
+/* Theme Toggle */ .theme-toggle-btn { background: none; border: none; cursor: pointer; font-size: 1.4rem; padding: 5px; display: flex; align-items: center; justify-content: center; color: var(--text-color); transition: color var(--transition-speed); } .theme-toggle-btn:hover { color: var(--primary-color); } body[data-theme="light"] .theme-toggle-btn .fa-sun { display: none; } body[data-theme="dark"] .theme-toggle-btn .fa-moon { display: none; } body[data-theme="light"] .theme-toggle-btn .fa-moon { color: var(--toggle-icon-dark); } body[data-theme="dark"] .theme-toggle-btn .fa-sun { color: var(--toggle-icon-light); }
+/* Main Content */ .main-content { flex-grow: 1; padding: 40px 0; } .main-content h1 { color: var(--heading-color); margin-bottom: 10px; text-align: center; font-weight: 700; } .subtitle { text-align: center; margin-bottom: 15px; color: var(--secondary-color); font-size: 1.1rem; } .subtitle strong, .subtitle b { color: var(--heading-color); font-weight: 600; }
+/* Warning Note */ .warning-note { text-align: center; background-color: rgba(255, 193, 7, 0.1); color: #b98900; padding: 10px 15px; border-radius: var(--border-radius); border: 1px solid rgba(255, 193, 7, 0.3); margin-bottom: 25px; font-size: 0.95rem; } body[data-theme="dark"] .warning-note { background-color: rgba(255, 202, 44, 0.15); color: var(--warning-color); border-color: rgba(255, 202, 44, 0.4); }
+/* Card */ .card { background-color: var(--card-bg); color: var(--text-color); border-radius: var(--border-radius); padding: 30px; margin-bottom: 30px; box-shadow: var(--box-shadow); border: 1px solid var(--border-color); transition: var(--transition-color), box-shadow var(--transition-speed); }
+/* Input Box */ .input-box h2 { color: var(--primary-color); margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; font-weight: 600; font-size: 1.2rem; } .input-box h2:first-of-type { margin-top: 0; }
+/* Drag Drop */ .drop-zone { border: 3px dashed var(--border-color); border-radius: var(--border-radius); padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color var(--transition-speed), background-color var(--transition-speed); margin-bottom: 20px; background-color: rgba(0,0,0,0.02); } body[data-theme="dark"] .drop-zone { background-color: rgba(255,255,255,0.05); } .drop-zone p { margin: 10px 0; color: var(--text-color); } .drop-zone .drop-icon { color: var(--secondary-color); margin-bottom: 15px; } .drop-zone.dragover { border-color: var(--primary-color); background-color: rgba(74, 105, 189, 0.1); } .file-label-btn { display: inline-block; margin-top: 10px; }
+/* Preview */ .preview-container { margin-top: 20px; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; } body[data-theme="dark"] .preview-container { background-color: #303644; } .preview-container h2 { margin-top: 0; margin-bottom: 10px; width: 100%; text-align: center; border-bottom: none; padding-bottom: 0; color: var(--heading-color); font-size: 1.1rem; font-weight: 600; }
+#preview-instruction { font-size: 0.9rem; font-style: italic; color: var(--text-color); margin-bottom: 15px; text-align: center; }
+/* Tool Selection */ .tool-selection { display: flex; gap: 15px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap; } .tool-selection label { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius); transition: background-color 0.2s, color 0.2s, border-color 0.2s; } .tool-selection input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0;} .tool-selection input[type="radio"]:checked + i + span { font-weight: 600; } .tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); } .tool-selection label:has(input[type="radio"]:checked) i { color: white; } body[data-theme="dark"] .tool-selection label { border-color: var(--border-color); } body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); } body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) i { color: white; } .tool-selection i { margin-right: 3px; width: 1em; /* Ensure icon takes space */ }
+/* Tool Controls */ .brush-controls, .polygon-controls { margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; color: var(--text-color); font-size: 0.9rem; width: 100%;} .brush-controls label, .polygon-controls label { font-weight: 500; } .brush-controls input[type="range"] { cursor: pointer; max-width: 150px; } #brush-size-value { font-weight: 600; min-width: 20px; display: inline-block; text-align: right; } #polygon-instruction { font-style: italic; }
+.preview-wrapper { position: relative; display: inline-block; line-height: 0; max-width: 100%; margin-bottom: 15px; background-color: #eee; } body[data-theme="dark"] .preview-wrapper { background-color: #444; }
+#image-preview, #video-preview { display: block; max-width: 100%; max-height: 50vh; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+#draw-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; z-index: 10; }
+.preview-controls { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+/* Buttons */ .btn { padding: 10px 20px; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed), opacity var(--transition-speed); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: white; line-height: 1.5; } .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; } .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); } .btn:active { transform: translateY(0); box-shadow: var(--box-shadow); } .btn-primary { background-color: var(--primary-color); } .btn-primary:not(:disabled):hover { background-color: #3a5aab; } body[data-theme="dark"] .btn-primary:not(:disabled):hover { background-color: #7c99d5; } .btn-secondary { background-color: var(--secondary-color); } .btn-secondary:not(:disabled):hover { background-color: var(--primary-color); } .btn-cancel { background-color: var(--cancel-color); } .btn-cancel:not(:disabled):hover { background-color: #5a6268; } body[data-theme="dark"] .btn-cancel:not(:disabled):hover { background-color: #ced4da; color: #333;} .btn-success { background-color: var(--success-color); } .btn-success:not(:disabled):hover { background-color: #218838; } body[data-theme="dark"] .btn-success:not(:disabled):hover { background-color: #4cc79a; } .btn-warning { background-color: var(--warning-color); color: #212529; } .btn-warning:not(:disabled):hover { background-color: var(--warning-hover-color); color: #212529; } body[data-theme="dark"] .btn-warning { color: #343a40; } body[data-theme="dark"] .btn-warning:not(:disabled):hover { color: #343a40; } .btn-danger { background-color: var(--danger-color); color: white; } .btn-danger:not(:disabled):hover { background-color: var(--danger-hover-color); color: white; } .btn-info { background-color: var(--info-color); color: white; } .btn-info:not(:disabled):hover { background-color: var(--info-hover-color); color: white; } .btn-process { width: 100%; margin-top: 20px; } .btn-small { padding: 6px 12px; font-size: 0.9rem; }
+/* Loading */ .loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; color: var(--secondary-color); } .spinner-svg { animation: rotate 2s linear infinite; width: 50px; height: 50px; margin-bottom: 15px; } .path { stroke: var(--spinner-color); stroke-linecap: round; animation: dash 1.5s ease-in-out infinite; transition: stroke var(--transition-speed); } @keyframes rotate { 100% { transform: rotate(360deg); } } @keyframes dash { 0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; } 50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; } 100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; } }
+/* Results */ .results-box { margin-top: 30px; border-top: 4px solid var(--primary-color); } #error-message { background-color: rgba(220, 53, 69, 0.1); color: var(--error-color); border: 1px solid rgba(220, 53, 69, 0.3); padding: 15px; border-radius: var(--border-radius); margin-bottom: 15px; word-wrap: break-word; } body[data-theme="dark"] #error-message { background-color: rgba(244, 106, 106, 0.15); border-color: rgba(244, 106, 106, 0.4); } #success-message p { margin-bottom: 10px; word-wrap: break-word; } #result-status { font-weight: 600; color: var(--success-color); } #result-details { margin-top: 15px; padding: 15px; background-color: rgba(0,0,0,0.03); border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word; color: var(--text-color); max-height: 200px; overflow-y: auto; } body[data-theme="dark"] #result-details { background-color: rgba(255,255,255,0.05); color: var(--text-color); } #result-details pre { margin: 0; font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; font-size: 0.9em; } .result-image-container { text-align: center; margin: 20px 0; } #result-image { max-width: 100%; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.result-video-area { margin: 20px 0; padding: 15px; border: 1px solid var(--border-color); border-radius: var(--border-radius); text-align: center; } body[data-theme="dark"] .result-video-area { border-color: var(--border-color); } .result-video-area p { margin-bottom: 10px; font-weight: 500; } #result-video-player { display: block; max-width: 100%; max-height: 60vh; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin: 0 auto 10px auto; background-color: #000; }
+#download-btn { margin-top: 15px; }
+/* About Me */ .about-me-section { padding: 60px 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); transition: background-color var(--transition-speed), border-color var(--transition-speed); } .about-me-section h2 { text-align: center; color: var(--heading-color); margin-bottom: 40px; font-weight: 700; } .about-content { display: flex; gap: 30px; align-items: flex-start; } .about-text { flex: 1; } .about-text h3 { color: var(--primary-color); margin-bottom: 15px; } .about-text p { margin-bottom: 15px; line-height: 1.7; } .about-text ul { list-style: none; padding-left: 0; margin-bottom: 15px; } .about-text li { margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; } .about-text li i { color: var(--secondary-color); width: 20px; text-align: center; font-size: 1.1em; }
+/* Footer */ .footer { background-color: var(--heading-color); color: #adb5bd; padding: 2rem 0; margin-top: auto; text-align: center; transition: background-color var(--transition-speed), color var(--transition-speed); } body[data-theme="dark"] .footer { background-color: #1f232b; color: #9aa1b9; } .footer p { margin-bottom: 10px; } .social-icons a { color: #adb5bd; margin: 0 10px; font-size: 1.5rem; transition: color var(--transition-speed); } body[data-theme="dark"] .social-icons a { color: #9aa1b9; } .social-icons a:hover { color: var(--accent-color); }
+/* Responsiveness */ @media (max-width: 768px) { .header-content { flex-direction: column; gap: 10px; } .nav { margin-top: 0; justify-content: center;} .main-content h1 { font-size: 1.8rem; } .drop-zone { padding: 30px 15px; } .btn { width: auto; } .btn-process { width: 100%; margin-top: 15px; } .about-content { flex-direction: column; } .tool-selection { gap: 10px;} } @media (max-width: 480px) { .container { padding: 0 15px; } .card { padding: 20px; } .logo { font-size: 1.1rem; text-align: center; width: 100%;} .header-content { flex-wrap: wrap; } .nav { gap: 10px;} .nav a { font-size: 0.9rem; } .theme-toggle-btn { font-size: 1.3rem; } .drop-zone { font-size: 0.9rem;} .drop-zone .drop-icon { font-size: 2.5rem; } .preview-controls { gap: 8px; } .preview-controls .btn { font-size: 0.75rem; padding: 4px 8px;} .about-text li i { font-size: 1em; } .brush-controls, .polygon-controls { flex-direction: column; gap: 5px;} .tool-selection label { font-size: 0.9rem; padding: 4px 8px;} }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // --- Element Selection ---
+    const formFile = document.getElementById('api-form-file');
+    const imageUpload = document.getElementById('image-upload');
+    const dropZone = document.getElementById('drop-zone');
+    const previewContainer = document.getElementById('preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const videoPreview = document.getElementById('video-preview');
+    const previewInstruction = document.getElementById('preview-instruction');
+    const clearPreviewBtn = document.getElementById('clear-preview-btn');
+    const processBtn = document.getElementById('process-btn');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const resultsBox = document.getElementById('results-box');
+    const errorMessageDiv = document.getElementById('error-message');
+    const successMessageDiv = document.getElementById('success-message');
+    const resultStatusP = document.getElementById('result-status');
+    const resultMessageP = document.getElementById('result-message');
+    const resultDetailsDiv = document.getElementById('result-details');
+    const resultImage = document.getElementById('result-image');
+    const resultImageContainer = document.querySelector('.result-image-container');
+    const resultVideoArea = document.getElementById('result-video-area');
+    const resultVideoPlayer = document.getElementById('result-video-player');
+    const downloadBtn = document.getElementById('download-btn');
+    const themeToggleButton = document.getElementById('theme-toggle');
+    const canvas = document.getElementById('draw-canvas');
+    const ctx = canvas ? canvas.getContext('2d') : null;
+    const undoBtn = document.getElementById('undo-last-btn');
+    const clearDrawingBtn = document.getElementById('clear-drawing-btn');
+    const brushSizeSlider = document.getElementById('brush-size');
+    const brushSizeValueSpan = document.getElementById('brush-size-value');
+    const toolRadios = document.querySelectorAll('input[name="draw-tool"]');
+    const brushControls = document.getElementById('brush-controls');
+    const polygonControls = document.getElementById('polygon-controls');
+    const finishPolygonBtn = document.getElementById('finish-polygon-btn');
+
+    // --- State Variables ---
+    let currentTool = 'brush';
+    let isDrawing = false; // Mouse button down AND drawing action active
+    let isDrawingPolygon = false; // Specifically adding polygon points
+    let startX, startY, currentX, currentY;
+    let scaleX = 1, scaleY = 1;
+    let currentFile = null; let isVideoFile = false; let videoObjectURL = null;
+    let shapes = []; // { type: 'brush'/'box'/'polygon', data: ..., closed?: bool, size?: number }
+    let currentPolygonPoints = [];
+    let currentBrushSize = 10;
+
+    // --- Utility Functions ---
+    const showElement = (el) => { if (el) el.style.display = 'block'; };
+    const showFlexElement = (el) => { if (el) el.style.display = 'flex'; };
+    const hideElement = (el) => { if (el) el.style.display = 'none'; };
+    const showInlineBlockElement = (el) => { if (el) el.style.display = 'inline-block'; };
+
+    // --- Canvas Drawing ---
+    const clearCanvas = () => { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); };
+    const redrawCanvas = () => {
+        if (!ctx || !canvas || canvas.width === 0 || canvas.height === 0) return; clearCanvas();
+        // Draw finished shapes
+        shapes.forEach(shape => {
+            ctx.beginPath();
+            if (shape.type === 'brush' && shape.data.length >= 2) {
+                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-brush').trim() || 'rgba(255,0,0,0.7)';
+                ctx.lineWidth = shape.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.moveTo(shape.data[0].x, shape.data[0].y);
+                for (let i = 1; i < shape.data.length; i++) { ctx.lineTo(shape.data[i].x, shape.data[i].y); }
+                ctx.stroke();
+            } else if (shape.type === 'box' && shape.data) {
+                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-box').trim() || 'rgba(0,100,255,0.8)';
+                ctx.lineWidth = 2; ctx.strokeRect(shape.data.x, shape.data.y, shape.data.w, shape.data.h);
+            } else if (shape.type === 'polygon' && shape.data.length >= 2) {
+                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').trim() || 'rgba(0,200,100,0.8)';
+                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').replace('0.8)', '0.4)') || 'rgba(0,200,100,0.4)';
+                 ctx.lineWidth = 2; ctx.moveTo(shape.data[0].x, shape.data[0].y);
+                 for (let i = 1; i < shape.data.length; i++) { ctx.lineTo(shape.data[i].x, shape.data[i].y); }
+                 if (shape.closed) { ctx.closePath(); ctx.fill(); } ctx.stroke();
+            }
+        });
+        // Draw current interactive element
+        if (isDrawing) {
+            if (currentTool === 'brush' && currentPolygonPoints.length >= 2) { // Re-use currentPolygonPoints for live brush
+                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-brush').trim() || 'rgba(255,0,0,0.7)';
+                 ctx.lineWidth = currentBrushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
+                 for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); } ctx.stroke();
+            } else if (currentTool === 'box' && startX !== undefined) {
+                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-box').trim() || 'rgba(0,100,255,0.8)';
+                 ctx.lineWidth = 2; const cW = currentX - startX; const cH = currentY - startY; ctx.strokeRect(startX, startY, cW, cH);
+            }
+        }
+        // Draw current polygon points/lines
+        if (currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+             ctx.fillStyle = 'rgba(0, 0, 255, 0.6)'; currentPolygonPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+             if (currentPolygonPoints.length >= 2) {
+                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').trim() || 'rgba(0,200,100,0.8)';
+                 ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
+                 for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); } ctx.stroke();
+             }
+             if (currentX !== undefined && !isDrawingPolygon) { // Draw line to cursor only when not actively dragging (isDrawing refers to drag state)
+                 ctx.strokeStyle = 'rgba(150, 150, 150, 0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[currentPolygonPoints.length - 1].x, currentPolygonPoints[currentPolygonPoints.length - 1].y); ctx.lineTo(currentX, currentY); ctx.stroke();
+             }
+        }
+    };
+
+    // --- Buttons & UI State ---
+    const updateButtonStates = () => { const hasDrawings = shapes.length > 0; processBtn.disabled = !(currentFile && hasDrawings); if (hasDrawings) { showInlineBlockElement(undoBtn); showInlineBlockElement(clearDrawingBtn); } else { hideElement(undoBtn); hideElement(clearDrawingBtn); } hideElement(finishPolygonBtn); if (currentTool === 'polygon' && currentPolygonPoints.length >= 3) { showInlineBlockElement(finishPolygonBtn); } };
+
+    // --- Canvas Sizing ---
+    const sizeCanvasToPreview = (previewElement) => { if (!canvas || !previewElement) { console.warn("Cannot size: canvas or preview missing"); return false; } const dW = previewElement.offsetWidth; const dH = previewElement.offsetHeight; if (dW <= 0 || dH <= 0) { console.warn(`Cannot size: preview dimensions invalid ${dW}x${dH}`); return false; } canvas.width = dW; canvas.height = dH; let oW, oH; if (previewElement.tagName === 'VIDEO') { oW = previewElement.videoWidth; oH = previewElement.videoHeight; } else { oW = previewElement.naturalWidth; oH = previewElement.naturalHeight; } scaleX = (oW > 0 && dW > 0) ? oW / dW : 1; scaleY = (oH > 0 && dH > 0) ? oH / dH : 1; console.log(`Canvas: ${dW}x${dH}. Scale X/Y: ${scaleX.toFixed(3)}/${scaleY.toFixed(3)}`); redrawCanvas(); return true; };
+
+    // --- Preview Logic ---
+    const showPreview = (file) => {
+        currentFile = file; shapes = []; currentPolygonPoints = []; isVideoFile = file.type.startsWith('video');
+        resetDrawingState(); hideElement(resultsBox); hideElement(loadingIndicator);
+        if (videoObjectURL && videoPreview.src === videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = null; }
+        imagePreview.onload = null; videoPreview.onloadedmetadata = null; videoPreview.onerror = null;
+        hideElement(imagePreview); hideElement(videoPreview);
+
+        if (isVideoFile) {
+            console.log("Video selected."); previewInstruction.textContent = "Pause video, then use tool to mark objects.";
+            try { videoObjectURL = URL.createObjectURL(file); } catch (e) { console.error("Error creating object URL:", e); showError("Could not create video URL."); clearAll(); return; }
+            videoPreview.src = videoObjectURL; showElement(videoPreview); hideElement(imagePreview);
+            videoPreview.onloadedmetadata = () => { console.log("Video metadata loaded."); if (!sizeCanvasToPreview(videoPreview)) { setTimeout(() => sizeCanvasToPreview(videoPreview), 250); } resetDrawingState(); }; // Delay retry slightly longer
+            videoPreview.onerror = (e) => { console.error("Video load error:", e); showError(`Video preview error: ${e.message || 'Cannot play video'}`); clearAll(); };
+        } else { // Image
+            console.log("Image selected."); previewInstruction.textContent = "Use tool to mark objects."; hideElement(videoPreview);
+            const reader = new FileReader();
+            reader.onload = (e) => { imagePreview.src = e.target.result; showElement(imagePreview); imagePreview.onload = () => { console.log("Image loaded."); if (!sizeCanvasToPreview(imagePreview)) { console.warn("Initial image sizing failed, maybe retry?"); } resetDrawingState(); }; if (imagePreview.complete && imagePreview.naturalWidth > 0) { imagePreview.onload(); } }
+            reader.onerror = (err) => { console.error("FileReader error:", err); showError("Could not read image."); clearAll(); }; reader.readAsDataURL(file);
+        }
+        showElement(previewContainer); hideElement(dropZone); updateButtonStates();
+    };
+
+    // --- Reset/Clear ---
+    const resetDrawingState = () => { clearCanvas(); isDrawing = false; isDrawingPolygon = false; currentPolygonPoints = []; startX = startY = currentX = currentY = undefined; redrawCanvas(); updateButtonStates(); };
+    const undoLast = () => { if (shapes.length > 0) { shapes.pop(); console.log(`Undone. ${shapes.length} left.`); redrawCanvas(); } updateButtonStates(); };
+    const clearAllDrawings = () => { shapes = []; console.log("Cleared drawings."); resetDrawingState(); };
+    const clearAll = () => { currentFile = null; isVideoFile = false; if (imageUpload) imageUpload.value = ''; if (imagePreview) { imagePreview.src = '#'; imagePreview.onload = null; hideElement(imagePreview); } if (videoPreview) { videoPreview.pause(); videoPreview.src = ''; videoPreview.onloadedmetadata = null; videoPreview.onerror = null; hideElement(videoPreview); } if (videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = null; } hideElement(previewContainer); if (dropZone) dropZone.style.display = ''; shapes = []; resetDrawingState(); hideElement(resultsBox); hideElement(loadingIndicator); if (processBtn) processBtn.disabled = true; };
+
+    // --- Theme Toggle ---
+    const applyTheme = (t) => { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }; if (themeToggleButton) { themeToggleButton.addEventListener('click', () => { const cT=document.body.getAttribute('data-theme')||'light'; const nT=cT==='light'?'dark':'light'; applyTheme(nT); }); const sT=localStorage.getItem('theme')||'light'; applyTheme(sT); }
+
+    // --- Drag & Drop / File Input ---
+    const handleFileSelect = (file) => { if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) { showPreview(file); } else { showError("Please select/drop a valid image or video file."); } };
+    if (dropZone) { ['dragenter','dragover','dragleave','drop'].forEach(eN=>dropZone.addEventListener(eN,(e)=>{e.preventDefault();e.stopPropagation();},!1)); ['dragenter','dragover'].forEach(eN=>dropZone.addEventListener(eN,()=>dropZone.classList.add('dragover'),!1)); ['dragleave','drop'].forEach(eN=>dropZone.addEventListener(eN,()=>dropZone.classList.remove('dragover'),!1)); dropZone.addEventListener('drop',(e)=>{ const f=e.dataTransfer.files; if(f.length>0){ handleFileSelect(f[0]); } },!1); dropZone.addEventListener('click',()=>{ if(!previewContainer||previewContainer.style.display==='none'){if(imageUpload)imageUpload.click();}}); }
+    if (imageUpload) { imageUpload.addEventListener('change', (e) => { if (e.target.files && e.target.files.length > 0) { handleFileSelect(e.target.files[0]); } }); }
+
+    // --- Buttons ---
+    if (clearPreviewBtn) { clearPreviewBtn.addEventListener('click', clearAll); } if (undoBtn) { undoBtn.addEventListener('click', undoLast); } if (clearDrawingBtn) { clearDrawingBtn.addEventListener('click', clearAllDrawings); } if (finishPolygonBtn) { finishPolygonBtn.addEventListener('click', () => finishCurrentPolygon(true)); }
+
+    // --- Tool Selection ---
+    toolRadios.forEach(radio => { radio.addEventListener('change', (e) => { currentTool = e.target.value; console.log("Tool:", currentTool); isDrawing = false; isDrawingPolygon = (currentTool === 'polygon'); currentPolygonPoints = []; // Clear polygon points on tool change
+        redrawCanvas(); updateButtonStates(); if (currentTool === 'brush') { showElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair'; } else if (currentTool === 'polygon') { hideElement(brushControls); showElement(polygonControls); canvas.style.cursor = 'copy'; } else { hideElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair'; } }); });
+
+    // --- Brush Size ---
+    if (brushSizeSlider && brushSizeValueSpan) { currentBrushSize = parseInt(brushSizeSlider.value, 10); brushSizeValueSpan.textContent = currentBrushSize; brushSizeSlider.addEventListener('input', (e) => { currentBrushSize = parseInt(e.target.value, 10); brushSizeValueSpan.textContent = currentBrushSize; }); }
+
+    // --- Polygon Finish ---
+    const finishCurrentPolygon = (forceClose = true) => { if (currentPolygonPoints.length >= 3) { shapes.push({ type: 'polygon', data: [...currentPolygonPoints], closed: forceClose }); } else { console.log("Polygon too small."); } currentPolygonPoints = []; isDrawing = false; isDrawingPolygon = false; redrawCanvas(); updateButtonStates(); };
+
+    // --- Canvas Events ---
+    if (canvas && ctx) {
+        const getMousePos = (evt) => { const rect = canvas.getBoundingClientRect(); return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }; };
+        canvas.addEventListener('mousedown', (e) => { if (!currentFile) return; const pos = getMousePos(e);
+            if (currentTool === 'brush') { isDrawing = true; currentPolygonPoints = [{ x: pos.x, y: pos.y }]; } // Use polygon points for temp brush stroke
+            else if (currentTool === 'box') { isDrawing = true; startX = pos.x; startY = pos.y; currentX = startX; currentY = startY; }
+            else if (currentTool === 'polygon') { isDrawing = false; isDrawingPolygon = true; currentPolygonPoints.push({ x: pos.x, y: pos.y }); const pts=currentPolygonPoints; if(pts.length>=3){const dx=pos.x-pts[0].x; const dy=pos.y-pts[0].y; const d=Math.sqrt(dx*dx+dy*dy); const thresh=10/(Math.min(scaleX,scaleY)||1); if(d<thresh){finishCurrentPolygon(true);return;}} redrawCanvas(); updateButtonStates(); }
+        });
+        canvas.addEventListener('mousemove', (e) => { if (!currentFile) return; const pos = getMousePos(e); currentX = pos.x; currentY = pos.y; // Always track mouse position over canvas
+            if (isDrawing) { if (currentTool === 'brush') { currentPolygonPoints.push({ x: pos.x, y: pos.y }); } redrawCanvas(); } // Redraw rubber band for brush/box
+            else if (currentTool === 'polygon' && currentPolygonPoints.length > 0) { redrawCanvas(); } // Redraw polygon line to cursor
+        });
+        canvas.addEventListener('mouseup', (e) => { if (!currentFile || !isDrawing || currentTool === 'polygon') return; // Polygon adds points on mousedown
+            isDrawing = false; const pos = getMousePos(e);
+            if (currentTool === 'brush') { if (currentPolygonPoints.length > 1) { shapes.push({ type: 'brush', data: [...currentPolygonPoints], size: currentBrushSize }); } currentPolygonPoints = []; }
+            else if (currentTool === 'box') { const x1=Math.min(startX,pos.x); const y1=Math.min(startY,pos.y); const x2=Math.max(startX,pos.x); const y2=Math.max(startY,pos.y); const fW=x2-x1; const fH=y2-y1; if(fW>3 && fH>3){ shapes.push({ type: 'box', data: { x: x1, y: y1, w: fW, h: fH } }); } startX = startY = currentX = currentY = undefined; }
+            redrawCanvas(); updateButtonStates();
+        });
+        canvas.addEventListener('mouseleave', (e) => { // Use mouseup logic for consistency if dragging brush/box off canvas
+            if (isDrawing && (currentTool === 'brush' || currentTool === 'box')) {
+                 console.log("Mouse left, finishing drawing (Brush/Box).");
+                 const pos = getMousePos(e); // Use last known position within canvas bounds ideally
+                 isDrawing = false;
+                 if (currentTool === 'brush') { if (currentPolygonPoints.length > 1) { shapes.push({ type: 'brush', data: [...currentPolygonPoints], size: currentBrushSize }); } currentPolygonPoints = []; }
+                 else if (currentTool === 'box') { const x1=Math.min(startX,pos.x); const y1=Math.min(startY,pos.y); const x2=Math.max(startX,pos.x); const y2=Math.max(startY,pos.y); const fW=x2-x1; const fH=y2-y1; if(fW>3 && fH>3){ shapes.push({ type: 'box', data: { x: x1, y: y1, w: fW, h: fH } }); } startX = startY = currentX = currentY = undefined; }
+                 redrawCanvas(); updateButtonStates();
+            } else {
+                // If just moving mouse off (not drawing), clear current position for polygon line
+                currentX = undefined; currentY = undefined;
+                if (currentTool === 'polygon') redrawCanvas(); // Redraw to remove line to cursor
+            }
+        });
+        canvas.addEventListener('mouseenter', (e) => { // Update current position when re-entering
+             if (!isDrawing && currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+                 const pos = getMousePos(e);
+                 currentX = pos.x; currentY = pos.y;
+                 redrawCanvas();
+             }
+         });
+
+    } else { console.error("Canvas context not found!"); }
+
+    // --- Form Submit ---
+    if (formFile) {
+        formFile.addEventListener('submit', (event) => {
+            event.preventDefault(); if (!currentFile) { showError("Select file first."); return; } if (shapes.length === 0) { showError("Mark object(s) first."); return; }
+            let oW, oH; const previewEl = isVideoFile ? videoPreview : imagePreview;
+            if (isVideoFile) { oW = previewEl.videoWidth; oH = previewEl.videoHeight; } else { oW = previewEl.naturalWidth; oH = previewEl.naturalHeight; }
+            if (!oW || !oH || oW <= 0 || oH <= 0) { showError("Cannot get original dimensions. Is preview loaded?"); return; }
+            const tempCanvas = document.createElement('canvas'); tempCanvas.width = oW; tempCanvas.height = oH; const tempCtx = tempCanvas.getContext('2d',{ willReadFrequently: false }); // Set willReadFrequently if needed, maybe false is ok
+            if (!tempCtx) { showError("Cannot create mask canvas."); return; }
+            console.log(`Generating mask at ${oW}x${oH}...`); tempCtx.fillStyle = 'black'; tempCtx.fillRect(0, 0, oW, oH); tempCtx.strokeStyle = 'white'; tempCtx.fillStyle = 'white'; tempCtx.lineCap = 'round'; tempCtx.lineJoin = 'round';
+            shapes.forEach(s => { // Draw all shapes onto scaled mask canvas
+                tempCtx.beginPath(); // Start new path for each shape
+                if (s.type === 'brush' && s.data.length >= 2) { const sSize = Math.max(1, Math.round(s.size*Math.min(scaleX,scaleY))); tempCtx.lineWidth = sSize; tempCtx.moveTo(s.data[0].x*scaleX, s.data[0].y*scaleY); for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); } tempCtx.stroke(); }
+                else if (s.type === 'box' && s.data) { tempCtx.fillRect(s.data.x*scaleX, s.data.y*scaleY, s.data.w*scaleX, s.data.h*scaleY); }
+                else if (s.type === 'polygon' && s.data.length >= 3) { tempCtx.moveTo(s.data[0].x*scaleX, s.data[0].y*scaleY); for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); } tempCtx.closePath(); tempCtx.fill(); }
+            });
+            const maskDataURL = tempCanvas.toDataURL('image/png'); const formData = new FormData(); formData.append('image_file', currentFile); formData.append('mask_data', maskDataURL); console.log(`Sending mask data (${(maskDataURL.length / 1024).toFixed(1)} KB)`);
+            handleApiRequest('/api/process', { method: 'POST', body: formData });
+        });
+    }
+
+    // --- API Request ---
+    const handleApiRequest = async (url, options) => { showFlexElement(loadingIndicator); hideElement(resultsBox); errorMessageDiv.textContent = ''; try { const response = await fetch(url, options); const contentType = response.headers.get("content-type"); let data; if (contentType && contentType.indexOf("application/json")!==-1) { data = await response.json(); } else { const text = await response.text(); throw new Error(`Server non-JSON (Status: ${response.status}). Logs: ${text.substring(0,100)}`); } if (!response.ok) { throw new Error(data.error || `HTTP error ${response.status}`); } console.log('Backend Response:', data); showSuccess(data); } catch (error) { console.error('API Error:', error); showError(error.message || 'Unknown request error.'); } finally { hideElement(loadingIndicator); } };
+    // --- Display Success ---
+    const showSuccess = (data) => { showElement(resultsBox); showElement(successMessageDiv); hideElement(errorMessageDiv); resultStatusP.textContent = `Status: ${data.status||'Success'}`; resultStatusP.style.color = data.status==='warning'?'var(--accent-color)':'var(--success-color)'; resultMessageP.textContent = `Message: ${data.message||'Complete.'}`; if (data.details && typeof data.details === 'object') { resultDetailsDiv.innerHTML = `<pre>${JSON.stringify(data.details,null,2)}</pre>`; showElement(resultDetailsDiv); } else { hideElement(resultDetailsDiv); } hideElement(resultImageContainer); hideElement(resultImage); resultImage.src = '#'; hideElement(resultVideoArea); hideElement(resultVideoPlayer); resultVideoPlayer.src = ''; hideElement(downloadBtn);
+        if (data.result_image_data) { console.log("Displaying image result."); resultImage.src = data.result_image_data; showElement(resultImage); showElement(resultImageContainer); downloadBtn.href = data.result_image_data; const fname = data.details?.input_filename||'image.png'; downloadBtn.setAttribute('download', `processed_${fname.split('.')[0]}.png`); showElement(downloadBtn); }
+        else if (data.result_video_url) { console.log("Displaying video result player."); resultVideoPlayer.src = data.result_video_url; showElement(resultVideoPlayer); showElement(resultVideoArea); downloadBtn.href = data.result_video_url; const fname = data.details?.result_filename || 'video.mp4'; downloadBtn.setAttribute('download', `processed_${fname}`); showElement(downloadBtn); }
+        else { console.log("No result media found."); if(data.status==='success'){ resultMessageP.textContent+=" (No output file)"; } }
+    };
+    // --- Display Error ---
+    const showError = (message) => { hideElement(successMessageDiv); errorMessageDiv.textContent = `Error: ${message}`; showElement(errorMessageDiv); showElement(resultsBox); hideElement(loadingIndicator); hideElement(resultImage); hideElement(resultImageContainer); hideElement(resultVideoArea); hideElement(resultVideoPlayer); hideElement(downloadBtn); };
+    // --- Initial State ---
+    if(processBtn) processBtn.disabled = true; hideElement(previewContainer); hideElement(resultsBox); hideElement(loadingIndicator); console.log("Page loaded."); if(toolRadios.length > 0) toolRadios[0].checked = true; // Ensure brush is default tool visually too showElement(brushControls); hideElement(polygonControls); // Show default controls
+});
+</script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
