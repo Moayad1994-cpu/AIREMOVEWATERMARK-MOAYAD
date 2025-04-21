@@ -3,97 +3,539 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Moayad Doughmosh - Object Remover (Multi-Tool)</title>
+    <title>AI Moayad Doughmosh - Object Remover</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪄</text></svg>">
+
+    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Link External CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body data-theme="light">
+<body data-theme="light"> <!-- Theme is controlled by JS -->
 
-    <header class="header"> <div class="container header-content"> <div class="logo"> <i class="fas fa-magic"></i> AI Moayad Doughmosh - Object Remover </div> <nav class="nav"> <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle dark mode"> <i class="fas fa-sun"></i> <i class="fas fa-moon"></i> </button> <a href="#main-app">Try It</a> <a href="#about-me">About</a> </nav> </div> </header>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-magic"></i> AI Moayad Doughmosh - Object Remover from image&video
+            </div>
+            <nav class="nav">
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle dark mode">
+                    <i class="fas fa-sun"></i> <!-- Icon for dark mode -->
+                    <i class="fas fa-moon"></i> <!-- Icon for light mode -->
+                </button>
+                <a href="#main-app">Try It</a>
+                <a href="#about-me">About</a>
+            </nav>
+        </div>
+    </header>
 
+    <!-- Main Application Section -->
     <main id="main-app" class="main-content">
         <div class="container">
-            <h1>AI-Powered Object Removal (Multi-Tool BETA)</h1>
-            <p class="subtitle">Upload Image or Video. Select a tool and mark objects to remove.</p>
-             <p class="warning-note"><strong>Note:</strong> Video processing is experimental, very slow, uses static masks, and may produce artifacts.</p>
+            <h1>AI-Powered Object Removal</h1>
+            <p class="subtitle">Upload Image or Video, mark objects, and let AI remove them.</p>
 
+            <!-- Important User Notes -->
+            <p class="warning-note">
+                <strong>Important Notes:</strong>
+                <br>• Video processing uses a <strong>STATIC mask</strong> (mark applied to all frames). Best for stationary objects/logos.
+                <br>• Video processing can be <strong>VERY SLOW</strong> for large files (up to 100MB allowed). Please be patient!
+                <br>• Results may vary, and artifacts are possible.
+            </p>
+
+            <!-- Input and Processing Form -->
             <div class="input-box card">
-                <h2>1. Upload Image or Video</h2>
-                <form id="api-form-file">
-                    <div id="drop-zone" class="drop-zone"> <i class="fas fa-cloud-upload-alt fa-3x drop-icon"></i> <p>Drag & drop file here or</p> <label for="image-upload" class="btn btn-secondary file-label-btn"> <i class="fas fa-file-import"></i> Choose File </label> <input type="file" id="image-upload" name="image_file" accept="image/*,video/mp4,video/webm,video/ogg,video/avi,video/mov,video/x-matroska" style="display: none;"> </div>
+                <form id="api-form-file" action="/api/process" method="POST" enctype="multipart/form-data">
 
+                    <!-- Step 1: Upload -->
+                    <h2>1. Upload Image or Video</h2>
+                    <div id="drop-zone" class="drop-zone">
+                        <i class="fas fa-cloud-upload-alt fa-3x drop-icon"></i>
+                        <p>Drag & drop file here or</p>
+                        <label for="image-upload" class="btn btn-secondary file-label-btn">
+                            <i class="fas fa-file-import"></i> Choose File (Max 100MB)
+                        </label>
+                        <input type="file" id="image-upload" name="image_file" accept="image/*,video/*" style="display: none;">
+                        <p class="file-type-note">Accepts common image and video formats.</p>
+                    </div>
+
+                    <!-- Step 2: Marking & Options (Hidden initially) -->
                     <div id="preview-container" class="preview-container" style="display: none;">
                         <h2>2. Mark Object(s) for Removal</h2>
-                        <p id="preview-instruction">Load a file to see preview.</p>
+                        <p id="preview-instruction">Loading preview...</p>
+
+                        <!-- Tool Selection -->
                         <div class="tool-selection">
                             <label><input type="radio" name="draw-tool" value="brush" checked> <i class="fas fa-paint-brush"></i><span> Brush</span></label>
                             <label><input type="radio" name="draw-tool" value="box"> <i class="far fa-square"></i><span> Box</span></label>
                             <label><input type="radio" name="draw-tool" value="polygon"> <i class="fas fa-draw-polygon"></i><span> Polygon</span></label>
                         </div>
-                        <div class="brush-controls" id="brush-controls" style="display: block;"> <label for="brush-size">Brush Size:</label> <input type="range" id="brush-size" name="brush-size" min="1" max="50" value="10"> <span id="brush-size-value">10</span> px </div>
-                        <div class="polygon-controls" id="polygon-controls" style="display: none;"> <span id="polygon-instruction">Click to add points. Click first point or Finish button to close.</span> <button type="button" id="finish-polygon-btn" class="btn btn-info btn-small" style="display: none;"> <i class="fas fa-check"></i> Finish Polygon</button> </div>
-                        <div class="preview-wrapper"> <img id="image-preview" src="#" alt="Image Preview" style="display: none;"/> <video id="video-preview" controls muted loop playsinline style="display: none;"></video> <canvas id="draw-canvas"></canvas> </div>
-                        <div class="preview-controls"> <button type="button" id="undo-last-btn" class="btn btn-warning btn-small" style="display: none;"> <i class="fas fa-undo-alt"></i> Undo Last </button> <button type="button" id="clear-drawing-btn" class="btn btn-danger btn-small" style="display: none;"> <i class="fas fa-times-circle"></i> Clear All </button> <button type="button" id="clear-preview-btn" class="btn btn-cancel btn-small"> <i class="fas fa-trash-alt"></i> Change File </button> </div>
+
+                        <!-- Tool Specific Controls -->
+                        <div class="brush-controls tool-controls" id="brush-controls">
+                             <label for="brush-size">Brush Size:</label>
+                             <input type="range" id="brush-size" name="brush-size" min="1" max="50" value="10">
+                             <span id="brush-size-value">10</span> px
+                        </div>
+                        <div class="polygon-controls tool-controls" id="polygon-controls" style="display: none;">
+                             <span id="polygon-instruction">Click points to draw. Click near start or Finish button to close.</span>
+                             <button type="button" id="finish-polygon-btn" class="btn btn-info btn-small" style="display: none;">
+                                 <i class="fas fa-check"></i> Finish Polygon
+                             </button>
+                        </div>
+
+                        <!-- Media Preview Area with Canvas Overlay -->
+                        <div class="preview-wrapper">
+                            <video id="video-preview" controls muted loop playsinline style="display: none;"></video>
+                            <img id="image-preview" src="#" alt="Image Preview" style="display: none;"/>
+                            <canvas id="draw-canvas"></canvas> <!-- Overlay for drawing -->
+                        </div>
+
+                        <!-- Drawing Action Buttons -->
+                        <div class="preview-controls">
+                             <button type="button" id="undo-last-btn" class="btn btn-warning btn-small" style="display: none;">
+                                 <i class="fas fa-undo-alt"></i> Undo Last
+                             </button>
+                             <button type="button" id="clear-drawing-btn" class="btn btn-danger btn-small" style="display: none;">
+                                 <i class="fas fa-times-circle"></i> Clear Marks
+                             </button>
+                             <button type="button" id="clear-preview-btn" class="btn btn-cancel btn-small">
+                                 <i class="fas fa-trash-alt"></i> Change File
+                             </button>
+                        </div>
+
+                        <!-- Optional Post-Processing -->
+                        <h2 class="h2-minor">2.5. Optional Post-Processing</h2>
+                        <div class="blur-controls tool-controls"> <!-- Reusing tool-controls style -->
+                             <label for="blur-slider">Apply Blur (After Removal):</label>
+                             <input type="range" id="blur-slider" name="blur_amount_display" min="0" max="25" value="0"> <!-- Name is for display only -->
+                             <span id="blur-value">None</span>
+                             <!-- Hidden input holds the actual value for submission -->
+                             <input type="hidden" id="blur-amount-hidden" name="blur_amount" value="0">
+                        </div>
+                         <p class="note">(Applies Gaussian blur to the whole output)</p>
                     </div>
 
-                     <h2>3. Process</h2>
-                     <button type="submit" id="process-btn" class="btn btn-primary btn-process" disabled> <i class="fas fa-magic"></i> Remove Objects </button>
+                    <!-- Step 3: Process Button (Hidden initially) -->
+                    <h2 id="process-header" style="display: none;">3. Process</h2>
+                    <button type="submit" id="process-btn" class="btn btn-primary btn-process" disabled>
+                        <i class="fas fa-magic"></i> Remove Objects
+                    </button>
                 </form>
             </div>
 
-            <div id="loading-indicator" class="loading-indicator" style="display: none;"> <svg class="spinner-svg" viewBox="0 0 50 50"> <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle> </svg> <p>Processing... (Video may take a long time!)</p> </div>
+            <!-- Loading Indicator (Hidden initially) -->
+            <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                <svg class="spinner-svg" viewBox="0 0 50 50">
+                    <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                </svg>
+                <p>Processing... <span id="loading-video-note" style="display: none;">Video processing can take a very long time!</span></p>
+            </div>
 
+            <!-- Results Area (Hidden initially) -->
             <div id="results-box" class="results-box card" style="display: none;">
                 <h2>Results</h2>
+                <!-- Error Message Area -->
                 <div id="error-message" class="error-message" style="display: none;"></div>
-                <div id="success-message">
-                    <p id="result-status"></p> <p id="result-message"></p> <div id="result-details"></div>
-                    <div class="result-image-container" style="display: none;"> <img id="result-image" src="" alt="Processed Image" style="display: none;"> </div>
-                    <div id="result-video-area" class="result-video-area" style="display: none;"> <p>Video processing finished:</p> <video id="result-video-player" controls muted loop playsinline style="display: none;"></video> </div>
-                    <a href="#" id="download-btn" class="btn btn-success" style="display: none;" download> <i class="fas fa-download"></i> Download Result </a>
+
+                <!-- Success Message & Content Area -->
+                <div id="success-message" style="display: none;">
+                    <p id="result-status">Status: N/A</p>
+                    <p id="result-message">Message: N/A</p>
+                    <div id="result-details-container" style="display: none;">
+                         <strong>Details:</strong>
+                         <div id="result-details"><pre>N/A</pre></div>
+                    </div>
+
+                    <!-- Result Image -->
+                    <div class="result-image-container" style="display: none;">
+                        <img id="result-image" src="#" alt="Processed Image" style="display: none;">
+                    </div>
+
+                    <!-- Result Video -->
+                    <div id="result-video-area" class="result-video-area" style="display: none;">
+                        <p>Processed Video:</p>
+                        <video id="result-video-player" controls muted loop playsinline style="display: none;"></video>
+                    </div>
+
+                    <!-- Download Button -->
+                    <a href="#" id="download-btn" class="btn btn-success" style="display: none;" download>
+                        <i class="fas fa-download"></i> Download Result
+                    </a>
                 </div>
             </div>
         </div>
     </main>
 
-    <section id="about-me" class="about-me-section"> <div class="container"> <h2>About Me</h2> <div class="about-content"> <div class="about-text"> <h3>Moayad Doughmosh</h3> <p>Multi-disciplinary professional...</p> <ul> <li><i class="fas fa-brain"></i> AI Eng Dev</li> <li><i class="fas fa-drafting-compass"></i> Survey/Civil Eng</li> <li><i class="fas fa-cube"></i> 3D Designer</li> <li><i class="fas fa-tools"></i> AI Tools Creator</li> </ul> <p>Passionate about tech.</p> </div> </div> </div> </section>
-    <footer class="footer"> <div class="container"> <p>© {{ current_year }} - Moayad Doughmosh</p> <div class="social-icons"> <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a> <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a> <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a> </div> </div> </footer>
-<style>
-    /* --- Basic Reset & Root Variables --- */
-:root { /* Light Theme */ --primary-color: #4a69bd; --secondary-color: #6a89cc; --accent-color: #f6b93b; --success-color: #28a745; --error-color: #dc3545; --cancel-color: #6c757d; --warning-color: #ffc107; --warning-hover-color: #e0a800; --danger-color: #dc3545; --danger-hover-color: #c82333; --info-color: #17a2b8; --info-hover-color: #138496; --bg-color: #f8f9fa; --bg-gradient: linear-gradient(135deg, #eef2f3, #f8f9fa); --card-bg: #ffffff; --text-color: #495057; --heading-color: #343a40; --border-color: #dee2e6; --shadow-color: rgba(0, 0, 0, 0.1); --spinner-color: var(--primary-color); --toggle-bg: #ccc; --toggle-indicator: white; --toggle-icon-light: var(--accent-color); --toggle-icon-dark: var(--secondary-color); --canvas-border-color: rgba(0, 0, 0, 0.2); --canvas-draw-color-brush: rgba(255, 0, 0, 0.7); --canvas-draw-color-box: rgba(0, 100, 255, 0.8); --canvas-draw-color-polygon: rgba(0, 200, 100, 0.8); /* Shared */ --font-family: 'Poppins', sans-serif; --border-radius: 8px; --box-shadow: 0 4px 15px var(--shadow-color); --transition-speed: 0.3s ease; --transition-color: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed); }
+    <!-- About Me Section -->
+    <section id="about-me" class="about-me-section">
+         <div class="container">
+             <h2>About Me</h2>
+             <div class="about-content">
+                 <div class="about-text">
+                     <h3>Moayad Doughmosh</h3>
+                     <p>Multi-disciplinary professional combining expertise in AI development, engineering, and design.</p>
+                     <ul>
+                         <li><i class="fas fa-brain"></i> AI Engineer & Developer</li>
+                         <li><i class="fas fa-drafting-compass"></i> Surveying & Civil Engineer</li>
+                         <li><i class="fas fa-cube"></i> 3D Designer</li>
+                         <li><i class="fas fa-tools"></i> AI Tools Creator</li>
+                     </ul>
+                     <p>Passionate about leveraging technology to solve real-world problems and create innovative tools.</p>
+                 </div>
+             </div>
+         </div>
+     </section>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <div class="container">
+            <p>© {{ current_year }} -Developed By 👷‍♂️👷‍♂️ Moayad Doughmosh</p>
+            <div class="social-icons">
+                <!-- Replace # with actual profile links -->
+                <a href="https://github.com/MoayadDoughmosh" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                <a href="#" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <style>
+        /* static/css/style.css - NEW VERSION */
+
+/* --- Basic Reset & Root Variables --- */
+:root {
+    /* Light Theme */
+    --primary-color: #4a69bd;
+    --secondary-color: #6a89cc;
+    --accent-color: #f6b93b;
+    --success-color: #28a745;
+    --error-color: #dc3545;
+    --cancel-color: #6c757d;
+    --warning-color: #ffc107;
+    --warning-hover-color: #e0a800;
+    --danger-color: #dc3545;
+    --danger-hover-color: #c82333;
+    --info-color: #17a2b8;
+    --info-hover-color: #138496;
+    --bg-color: #f8f9fa;
+    --bg-gradient: linear-gradient(135deg, #eef2f3, #f8f9fa);
+    --card-bg: #ffffff;
+    --text-color: #495057;
+    --heading-color: #343a40;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --spinner-color: var(--primary-color);
+    --toggle-bg: #ccc;
+    --toggle-indicator: white;
+    --toggle-icon-light: var(--accent-color); /* Sun in dark mode */
+    --toggle-icon-dark: var(--secondary-color); /* Moon in light mode */
+    --canvas-border-color: rgba(0, 0, 0, 0.2);
+    --canvas-draw-color-brush: rgba(255, 0, 0, 0.7);
+    --canvas-draw-color-box: rgba(0, 100, 255, 0.8);
+    --canvas-draw-color-polygon: rgba(0, 200, 100, 0.8);
+    --canvas-fill-color-box: rgba(0, 100, 255, 0.3);
+    --canvas-fill-color-polygon: rgba(0, 200, 100, 0.4);
+
+    /* Shared */
+    --font-family: 'Poppins', sans-serif;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 15px var(--shadow-color);
+    --transition-speed: 0.3s ease;
+    --transition-color: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+}
+
 /* --- Dark Theme --- */
-body[data-theme="dark"] { --primary-color: #5e80cc; --secondary-color: #7c99d5; --accent-color: #ffc107; --success-color: #34c38f; --error-color: #f46a6a; --cancel-color: #adb5bd; --warning-color: #ffca2c; --warning-hover-color: #ffda6a; --danger-color: #f46a6a; --danger-hover-color: #f67f7f; --info-color: #34d3e0; --info-hover-color: #54e0eb; --bg-color: #2a2f3a; --bg-gradient: linear-gradient(135deg, #2a2f3a, #303644); --card-bg: #353c4a; --text-color: #adb5bd; --heading-color: #e9ecef; --border-color: #495057; --shadow-color: rgba(0, 0, 0, 0.3); --spinner-color: var(--accent-color); --toggle-bg: var(--secondary-color); --toggle-indicator: var(--card-bg); --canvas-border-color: rgba(255, 255, 255, 0.2); --canvas-draw-color-brush: rgba(255, 77, 77, 0.7); --canvas-draw-color-box: rgba(100, 150, 255, 0.8); --canvas-draw-color-polygon: rgba(100, 220, 150, 0.8); }
-* { margin: 0; padding: 0; box-sizing: border-box; } html { scroll-behavior: smooth; } body { font-family: var(--font-family); color: var(--text-color); background-color: var(--bg-color); background-image: var(--bg-gradient); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; transition: var(--transition-color); } .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-/* Header */ .header { background: var(--card-bg); color: var(--heading-color); padding: 1rem 0; box-shadow: 0 2px 5px var(--shadow-color); position: sticky; top: 0; z-index: 1000; transition: background-color var(--transition-speed), color var(--transition-speed), box-shadow var(--transition-speed); } .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;} .logo { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--primary-color); flex-shrink: 0; } .logo i { color: var(--accent-color); } .nav { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;} .nav a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: color var(--transition-speed); } .nav a:hover { color: var(--primary-color); }
-/* Theme Toggle */ .theme-toggle-btn { background: none; border: none; cursor: pointer; font-size: 1.4rem; padding: 5px; display: flex; align-items: center; justify-content: center; color: var(--text-color); transition: color var(--transition-speed); } .theme-toggle-btn:hover { color: var(--primary-color); } body[data-theme="light"] .theme-toggle-btn .fa-sun { display: none; } body[data-theme="dark"] .theme-toggle-btn .fa-moon { display: none; } body[data-theme="light"] .theme-toggle-btn .fa-moon { color: var(--toggle-icon-dark); } body[data-theme="dark"] .theme-toggle-btn .fa-sun { color: var(--toggle-icon-light); }
-/* Main Content */ .main-content { flex-grow: 1; padding: 40px 0; } .main-content h1 { color: var(--heading-color); margin-bottom: 10px; text-align: center; font-weight: 700; } .subtitle { text-align: center; margin-bottom: 15px; color: var(--secondary-color); font-size: 1.1rem; } .subtitle strong, .subtitle b { color: var(--heading-color); font-weight: 600; }
-/* Warning Note */ .warning-note { text-align: center; background-color: rgba(255, 193, 7, 0.1); color: #b98900; padding: 10px 15px; border-radius: var(--border-radius); border: 1px solid rgba(255, 193, 7, 0.3); margin-bottom: 25px; font-size: 0.95rem; } body[data-theme="dark"] .warning-note { background-color: rgba(255, 202, 44, 0.15); color: var(--warning-color); border-color: rgba(255, 202, 44, 0.4); }
-/* Card */ .card { background-color: var(--card-bg); color: var(--text-color); border-radius: var(--border-radius); padding: 30px; margin-bottom: 30px; box-shadow: var(--box-shadow); border: 1px solid var(--border-color); transition: var(--transition-color), box-shadow var(--transition-speed); }
-/* Input Box */ .input-box h2 { color: var(--primary-color); margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; font-weight: 600; font-size: 1.2rem; } .input-box h2:first-of-type { margin-top: 0; }
-/* Drag Drop */ .drop-zone { border: 3px dashed var(--border-color); border-radius: var(--border-radius); padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color var(--transition-speed), background-color var(--transition-speed); margin-bottom: 20px; background-color: rgba(0,0,0,0.02); } body[data-theme="dark"] .drop-zone { background-color: rgba(255,255,255,0.05); } .drop-zone p { margin: 10px 0; color: var(--text-color); } .drop-zone .drop-icon { color: var(--secondary-color); margin-bottom: 15px; } .drop-zone.dragover { border-color: var(--primary-color); background-color: rgba(74, 105, 189, 0.1); } .file-label-btn { display: inline-block; margin-top: 10px; }
-/* Preview */ .preview-container { margin-top: 20px; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; } body[data-theme="dark"] .preview-container { background-color: #303644; } .preview-container h2 { margin-top: 0; margin-bottom: 10px; width: 100%; text-align: center; border-bottom: none; padding-bottom: 0; color: var(--heading-color); font-size: 1.1rem; font-weight: 600; }
-#preview-instruction { font-size: 0.9rem; font-style: italic; color: var(--text-color); margin-bottom: 15px; text-align: center; }
-/* Tool Selection */ .tool-selection { display: flex; gap: 15px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap; } .tool-selection label { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius); transition: background-color 0.2s, color 0.2s, border-color 0.2s; } .tool-selection input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0;} .tool-selection input[type="radio"]:checked + i + span { font-weight: 600; } .tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); } .tool-selection label:has(input[type="radio"]:checked) i { color: white; } body[data-theme="dark"] .tool-selection label { border-color: var(--border-color); } body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); } body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) i { color: white; } .tool-selection i { margin-right: 3px; width: 1em; /* Ensure icon takes space */ }
-/* Tool Controls */ .brush-controls, .polygon-controls { margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; color: var(--text-color); font-size: 0.9rem; width: 100%;} .brush-controls label, .polygon-controls label { font-weight: 500; } .brush-controls input[type="range"] { cursor: pointer; max-width: 150px; } #brush-size-value { font-weight: 600; min-width: 20px; display: inline-block; text-align: right; } #polygon-instruction { font-style: italic; }
-.preview-wrapper { position: relative; display: inline-block; line-height: 0; max-width: 100%; margin-bottom: 15px; background-color: #eee; } body[data-theme="dark"] .preview-wrapper { background-color: #444; }
-#image-preview, #video-preview { display: block; max-width: 100%; max-height: 50vh; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
-#draw-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; z-index: 10; }
-.preview-controls { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
-/* Buttons */ .btn { padding: 10px 20px; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed), opacity var(--transition-speed); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: white; line-height: 1.5; } .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; } .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); } .btn:active { transform: translateY(0); box-shadow: var(--box-shadow); } .btn-primary { background-color: var(--primary-color); } .btn-primary:not(:disabled):hover { background-color: #3a5aab; } body[data-theme="dark"] .btn-primary:not(:disabled):hover { background-color: #7c99d5; } .btn-secondary { background-color: var(--secondary-color); } .btn-secondary:not(:disabled):hover { background-color: var(--primary-color); } .btn-cancel { background-color: var(--cancel-color); } .btn-cancel:not(:disabled):hover { background-color: #5a6268; } body[data-theme="dark"] .btn-cancel:not(:disabled):hover { background-color: #ced4da; color: #333;} .btn-success { background-color: var(--success-color); } .btn-success:not(:disabled):hover { background-color: #218838; } body[data-theme="dark"] .btn-success:not(:disabled):hover { background-color: #4cc79a; } .btn-warning { background-color: var(--warning-color); color: #212529; } .btn-warning:not(:disabled):hover { background-color: var(--warning-hover-color); color: #212529; } body[data-theme="dark"] .btn-warning { color: #343a40; } body[data-theme="dark"] .btn-warning:not(:disabled):hover { color: #343a40; } .btn-danger { background-color: var(--danger-color); color: white; } .btn-danger:not(:disabled):hover { background-color: var(--danger-hover-color); color: white; } .btn-info { background-color: var(--info-color); color: white; } .btn-info:not(:disabled):hover { background-color: var(--info-hover-color); color: white; } .btn-process { width: 100%; margin-top: 20px; } .btn-small { padding: 6px 12px; font-size: 0.9rem; }
-/* Loading */ .loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; color: var(--secondary-color); } .spinner-svg { animation: rotate 2s linear infinite; width: 50px; height: 50px; margin-bottom: 15px; } .path { stroke: var(--spinner-color); stroke-linecap: round; animation: dash 1.5s ease-in-out infinite; transition: stroke var(--transition-speed); } @keyframes rotate { 100% { transform: rotate(360deg); } } @keyframes dash { 0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; } 50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; } 100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; } }
-/* Results */ .results-box { margin-top: 30px; border-top: 4px solid var(--primary-color); } #error-message { background-color: rgba(220, 53, 69, 0.1); color: var(--error-color); border: 1px solid rgba(220, 53, 69, 0.3); padding: 15px; border-radius: var(--border-radius); margin-bottom: 15px; word-wrap: break-word; } body[data-theme="dark"] #error-message { background-color: rgba(244, 106, 106, 0.15); border-color: rgba(244, 106, 106, 0.4); } #success-message p { margin-bottom: 10px; word-wrap: break-word; } #result-status { font-weight: 600; color: var(--success-color); } #result-details { margin-top: 15px; padding: 15px; background-color: rgba(0,0,0,0.03); border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word; color: var(--text-color); max-height: 200px; overflow-y: auto; } body[data-theme="dark"] #result-details { background-color: rgba(255,255,255,0.05); color: var(--text-color); } #result-details pre { margin: 0; font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; font-size: 0.9em; } .result-image-container { text-align: center; margin: 20px 0; } #result-image { max-width: 100%; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.result-video-area { margin: 20px 0; padding: 15px; border: 1px solid var(--border-color); border-radius: var(--border-radius); text-align: center; } body[data-theme="dark"] .result-video-area { border-color: var(--border-color); } .result-video-area p { margin-bottom: 10px; font-weight: 500; } #result-video-player { display: block; max-width: 100%; max-height: 60vh; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin: 0 auto 10px auto; background-color: #000; }
-#download-btn { margin-top: 15px; }
-/* About Me */ .about-me-section { padding: 60px 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); transition: background-color var(--transition-speed), border-color var(--transition-speed); } .about-me-section h2 { text-align: center; color: var(--heading-color); margin-bottom: 40px; font-weight: 700; } .about-content { display: flex; gap: 30px; align-items: flex-start; } .about-text { flex: 1; } .about-text h3 { color: var(--primary-color); margin-bottom: 15px; } .about-text p { margin-bottom: 15px; line-height: 1.7; } .about-text ul { list-style: none; padding-left: 0; margin-bottom: 15px; } .about-text li { margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; } .about-text li i { color: var(--secondary-color); width: 20px; text-align: center; font-size: 1.1em; }
-/* Footer */ .footer { background-color: var(--heading-color); color: #adb5bd; padding: 2rem 0; margin-top: auto; text-align: center; transition: background-color var(--transition-speed), color var(--transition-speed); } body[data-theme="dark"] .footer { background-color: #1f232b; color: #9aa1b9; } .footer p { margin-bottom: 10px; } .social-icons a { color: #adb5bd; margin: 0 10px; font-size: 1.5rem; transition: color var(--transition-speed); } body[data-theme="dark"] .social-icons a { color: #9aa1b9; } .social-icons a:hover { color: var(--accent-color); }
-/* Responsiveness */ @media (max-width: 768px) { .header-content { flex-direction: column; gap: 10px; } .nav { margin-top: 0; justify-content: center;} .main-content h1 { font-size: 1.8rem; } .drop-zone { padding: 30px 15px; } .btn { width: auto; } .btn-process { width: 100%; margin-top: 15px; } .about-content { flex-direction: column; } .tool-selection { gap: 10px;} } @media (max-width: 480px) { .container { padding: 0 15px; } .card { padding: 20px; } .logo { font-size: 1.1rem; text-align: center; width: 100%;} .header-content { flex-wrap: wrap; } .nav { gap: 10px;} .nav a { font-size: 0.9rem; } .theme-toggle-btn { font-size: 1.3rem; } .drop-zone { font-size: 0.9rem;} .drop-zone .drop-icon { font-size: 2.5rem; } .preview-controls { gap: 8px; } .preview-controls .btn { font-size: 0.75rem; padding: 4px 8px;} .about-text li i { font-size: 1em; } .brush-controls, .polygon-controls { flex-direction: column; gap: 5px;} .tool-selection label { font-size: 0.9rem; padding: 4px 8px;} }
-</style>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
+body[data-theme="dark"] {
+    --primary-color: #5e80cc;
+    --secondary-color: #7c99d5;
+    --accent-color: #ffc107;
+    --success-color: #34c38f;
+    --error-color: #f46a6a;
+    --cancel-color: #adb5bd;
+    --warning-color: #ffca2c;
+    --warning-hover-color: #ffda6a;
+    --danger-color: #f46a6a;
+    --danger-hover-color: #f67f7f;
+    --info-color: #34d3e0;
+    --info-hover-color: #54e0eb;
+    --bg-color: #2a2f3a;
+    --bg-gradient: linear-gradient(135deg, #2a2f3a, #303644);
+    --card-bg: #353c4a;
+    --text-color: #adb5bd;
+    --heading-color: #e9ecef;
+    --border-color: #495057;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --spinner-color: var(--accent-color);
+    --toggle-bg: var(--secondary-color);
+    --toggle-indicator: var(--card-bg);
+    --canvas-border-color: rgba(255, 255, 255, 0.2);
+    --canvas-draw-color-brush: rgba(255, 77, 77, 0.7);
+    --canvas-draw-color-box: rgba(100, 150, 255, 0.8);
+    --canvas-draw-color-polygon: rgba(100, 220, 150, 0.8);
+    --canvas-fill-color-box: rgba(100, 150, 255, 0.3);
+    --canvas-fill-color-polygon: rgba(100, 220, 150, 0.4);
+}
+
+/* --- Global Styles & Resets --- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+    font-family: var(--font-family);
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    background-image: var(--bg-gradient);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: var(--transition-color);
+    font-size: 1rem;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 20px; width: 100%; }
+
+/* --- Header --- */
+.header { background: var(--card-bg); color: var(--heading-color); padding: 1rem 0; box-shadow: 0 2px 5px var(--shadow-color); position: sticky; top: 0; z-index: 1000; transition: background-color var(--transition-speed), color var(--transition-speed), box-shadow var(--transition-speed); }
+.header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
+.logo { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--primary-color); flex-shrink: 0; }
+.logo i { color: var(--accent-color); }
+.nav { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;}
+.nav a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: color var(--transition-speed); padding: 5px 0; }
+.nav a:hover { color: var(--primary-color); }
+
+/* --- Theme Toggle Button --- */
+.theme-toggle-btn { background: none; border: none; cursor: pointer; font-size: 1.4rem; padding: 5px; display: flex; align-items: center; justify-content: center; color: var(--text-color); transition: color var(--transition-speed); }
+.theme-toggle-btn:hover { color: var(--primary-color); }
+body[data-theme="light"] .theme-toggle-btn .fa-sun { display: none; } /* Hide sun in light mode */
+body[data-theme="dark"] .theme-toggle-btn .fa-moon { display: none; } /* Hide moon in dark mode */
+body[data-theme="light"] .theme-toggle-btn .fa-moon { color: var(--toggle-icon-dark); }
+body[data-theme="dark"] .theme-toggle-btn .fa-sun { color: var(--toggle-icon-light); }
+
+/* --- Main Content Area --- */
+.main-content { flex-grow: 1; padding: 40px 0; }
+.main-content h1 { color: var(--heading-color); margin-bottom: 10px; text-align: center; font-weight: 700; font-size: 2rem; }
+.subtitle { text-align: center; margin-bottom: 15px; color: var(--secondary-color); font-size: 1.1rem; }
+.subtitle strong, .subtitle b { color: var(--heading-color); font-weight: 600; }
+
+/* --- Warning Note Box --- */
+.warning-note { text-align: center; background-color: rgba(255, 193, 7, 0.1); color: #a17400; padding: 15px 20px; border-radius: var(--border-radius); border: 1px solid rgba(255, 193, 7, 0.3); margin-bottom: 30px; font-size: 0.95rem; line-height: 1.5; }
+.warning-note strong { color: #856404; display: block; margin-bottom: 5px; font-weight: 600;}
+body[data-theme="dark"] .warning-note { background-color: rgba(255, 202, 44, 0.15); color: var(--warning-color); border-color: rgba(255, 202, 44, 0.4); }
+body[data-theme="dark"] .warning-note strong { color: #ffda6a; }
+
+/* --- Card Styling --- */
+.card { background-color: var(--card-bg); color: var(--text-color); border-radius: var(--border-radius); padding: 30px; margin-bottom: 30px; box-shadow: var(--box-shadow); border: 1px solid var(--border-color); transition: var(--transition-color), box-shadow var(--transition-speed); }
+
+/* --- Input Box Section --- */
+.input-box h2 { color: var(--primary-color); margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; font-weight: 600; font-size: 1.3rem; }
+.input-box h2:first-of-type { margin-top: 0; }
+.h2-minor { font-size: 1.1rem; color: var(--secondary-color); border-bottom: 1px dashed var(--border-color); margin-top: 30px; margin-bottom: 10px; /* Adjusted margin */ }
+
+/* --- Drag and Drop Area --- */
+.drop-zone { border: 3px dashed var(--border-color); border-radius: var(--border-radius); padding: 40px 20px; text-align: center; cursor: pointer; transition: border-color var(--transition-speed), background-color var(--transition-speed); margin-bottom: 20px; background-color: rgba(0,0,0,0.02); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+body[data-theme="dark"] .drop-zone { background-color: rgba(255,255,255,0.05); }
+.drop-zone p { margin: 10px 0; color: var(--text-color); font-size: 1rem; }
+.drop-zone .drop-icon { color: var(--secondary-color); margin-bottom: 15px; font-size: 3rem; }
+.drop-zone.dragover { border-color: var(--primary-color); background-color: rgba(74, 105, 189, 0.1); }
+.file-label-btn { display: inline-block; margin-top: 10px; }
+.file-type-note { font-size: 0.85rem; color: var(--text-color); margin-top: 15px; font-style: italic; }
+
+/* --- Preview Section --- */
+.preview-container { margin-top: 20px; padding: 20px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; }
+body[data-theme="dark"] .preview-container { background-color: #303644; }
+.preview-container h2 { width: 100%; text-align: left; } /* Align subsection headers */
+#preview-instruction { font-size: 0.95rem; font-style: italic; color: var(--text-color); margin-bottom: 15px; text-align: center; }
+
+/* --- Tool Selection Buttons --- */
+.tool-selection { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; width: 100%; }
+.tool-selection label { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border: 1px solid var(--border-color); border-radius: var(--border-radius); transition: background-color 0.2s, color 0.2s, border-color 0.2s; font-size: 0.95rem; }
+.tool-selection input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0;}
+.tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+.tool-selection label:has(input[type="radio"]:checked) i { color: white; }
+.tool-selection label:has(input[type="radio"]:checked) span { font-weight: 600; }
+body[data-theme="dark"] .tool-selection label { border-color: var(--border-color); }
+body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+body[data-theme="dark"] .tool-selection label:has(input[type="radio"]:checked) i { color: white; }
+.tool-selection i { margin-right: 3px; width: 1.1em; text-align: center; }
+
+/* --- Tool Control Sections (Brush, Polygon, Blur) --- */
+.tool-controls { margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; color: var(--text-color); font-size: 0.95rem; width: 100%; padding: 10px 0; }
+.tool-controls label { font-weight: 500; margin-right: 5px; }
+.tool-controls input[type="range"] { cursor: pointer; max-width: 180px; flex-grow: 1; vertical-align: middle;}
+#brush-size-value { font-weight: 600; min-width: 25px; display: inline-block; text-align: right; }
+#polygon-instruction { font-style: italic; flex-basis: 100%; text-align: center; margin-bottom: 5px; }
+#blur-value { font-weight: 600; min-width: 60px; text-align: center; background-color: var(--bg-color); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--border-color); margin-left: 5px; display: inline-block; vertical-align: middle;}
+body[data-theme="dark"] #blur-value { background-color: #303644; border-color: var(--border-color);}
+.note { font-size: 0.85rem; color: var(--secondary-color); text-align: center; width: 100%; margin-top: 0px;}
+
+
+/* --- Media Preview Wrapper & Canvas --- */
+.preview-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    width: auto;
+    line-height: 0;
+    margin: 15px auto;
+    background-color: #e0e0e0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+body[data-theme="dark"] .preview-wrapper { background-color: #444; }
+
+#image-preview, #video-preview {
+    display: block;
+    max-width: 100%;
+    /* *** THIS IS THE NEW VALUE *** */
+    max-height: 75vh; /* Increased from 70vh */
+    height: auto;
+    width: auto;
+    margin: 0 auto;
+}
+
+#draw-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Cover the wrapper */
+    height: 100%; /* Cover the wrapper */
+    cursor: crosshair;
+    z-index: 10;
+    touch-action: none; /* Prevent scrolling on touch */
+}
+
+/* --- Preview Action Buttons --- */
+.preview-controls { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; width: 100%; }
+
+/* --- General Button Styling --- */
+.btn { padding: 10px 20px; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed), opacity var(--transition-speed); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: white; line-height: 1.5; white-space: nowrap; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); }
+.btn:active { transform: translateY(0); box-shadow: var(--box-shadow); }
+/* Button Color Variants */
+.btn-primary { background-color: var(--primary-color); }
+.btn-primary:not(:disabled):hover { background-color: #3a5aab; }
+body[data-theme="dark"] .btn-primary:not(:disabled):hover { background-color: #7c99d5; }
+.btn-secondary { background-color: var(--secondary-color); }
+.btn-secondary:not(:disabled):hover { background-color: var(--primary-color); }
+.btn-cancel { background-color: var(--cancel-color); }
+.btn-cancel:not(:disabled):hover { background-color: #5a6268; }
+body[data-theme="dark"] .btn-cancel { color: #212529; }
+body[data-theme="dark"] .btn-cancel:not(:disabled):hover { background-color: #c6cdd3; }
+.btn-success { background-color: var(--success-color); }
+.btn-success:not(:disabled):hover { background-color: #218838; }
+body[data-theme="dark"] .btn-success:not(:disabled):hover { background-color: #4cc79a; }
+.btn-warning { background-color: var(--warning-color); color: #212529; }
+.btn-warning:not(:disabled):hover { background-color: var(--warning-hover-color); color: #212529; }
+body[data-theme="dark"] .btn-warning { color: #343a40; }
+body[data-theme="dark"] .btn-warning:not(:disabled):hover { color: #343a40; }
+.btn-danger { background-color: var(--danger-color); color: white; }
+.btn-danger:not(:disabled):hover { background-color: var(--danger-hover-color); color: white; }
+.btn-info { background-color: var(--info-color); color: white; }
+.btn-info:not(:disabled):hover { background-color: var(--info-hover-color); color: white; }
+/* Specific Button Sizes/Layouts */
+.btn-process { width: 100%; margin-top: 25px; padding: 12px 20px; font-size: 1.1rem; }
+.btn-small { padding: 6px 12px; font-size: 0.9rem; }
+
+/* --- Loading Indicator --- */
+.loading-indicator { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; color: var(--secondary-color); }
+.spinner-svg { animation: rotate 2s linear infinite; width: 50px; height: 50px; margin-bottom: 15px; }
+.path { stroke: var(--spinner-color); stroke-linecap: round; animation: dash 1.5s ease-in-out infinite; transition: stroke var(--transition-speed); stroke-width: 5; fill: none;}
+@keyframes rotate { 100% { transform: rotate(360deg); } }
+@keyframes dash { 0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; } 50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; } 100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; } }
+#loading-indicator p { font-size: 1.1rem; }
+#loading-video-note { display: block; font-size: 0.9rem; font-style: italic; margin-top: 5px; color: var(--warning-color); }
+
+/* --- Results Box --- */
+.results-box { margin-top: 30px; border-top: 4px solid var(--primary-color); padding-top: 20px; }
+#error-message { background-color: rgba(220, 53, 69, 0.1); color: var(--error-color); border: 1px solid rgba(220, 53, 69, 0.3); padding: 15px 20px; border-radius: var(--border-radius); margin-bottom: 15px; word-wrap: break-word; font-weight: 500;}
+body[data-theme="dark"] #error-message { background-color: rgba(244, 106, 106, 0.15); border-color: rgba(244, 106, 106, 0.4); }
+#success-message p { margin-bottom: 10px; word-wrap: break-word; }
+#result-status { font-weight: 600; } /* Color set by JS */
+#result-details-container { margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+#result-details-container strong { color: var(--heading-color); }
+#result-details { margin-top: 5px; padding: 15px; background-color: rgba(0,0,0,0.03); border-radius: var(--border-radius); border: 1px solid var(--border-color); font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; color: var(--text-color); max-height: 250px; overflow-y: auto; }
+body[data-theme="dark"] #result-details { background-color: rgba(255,255,255,0.05); border-color: var(--border-color); }
+#result-details pre { margin: 0; font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; font-size: 0.9em; line-height: 1.4; }
+#result-details strong { color: var(--heading-color); } /* Ensure keys are visible */
+
+/* --- Result Media Display --- */
+.result-image-container, .result-video-area { text-align: center; margin: 25px 0; padding: 15px; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-color);}
+body[data-theme="dark"] .result-image-container,
+body[data-theme="dark"] .result-video-area { background-color: #303644; border-color: var(--border-color); }
+#result-image, #result-video-player { display: block; max-width: 100%; max-height: 75vh; height: auto; border-radius: var(--border-radius); border: 1px solid var(--border-color); box-shadow: 0 3px 10px rgba(0,0,0,0.1); margin: 10px auto; }
+#result-video-player { background-color: #000; }
+.result-video-area p { margin-bottom: 10px; font-weight: 500; color: var(--heading-color); font-size: 1.1rem;}
+#download-btn { margin-top: 20px; display: inline-block; }
+
+/* --- About Me Section --- */
+.about-me-section { padding: 60px 0; background-color: var(--card-bg); border-top: 1px solid var(--border-color); transition: background-color var(--transition-speed), border-color var(--transition-speed); }
+.about-me-section h2 { text-align: center; color: var(--heading-color); margin-bottom: 40px; font-weight: 700; font-size: 1.8rem;}
+.about-content { display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
+.about-text h3 { color: var(--primary-color); margin-bottom: 15px; font-size: 1.4rem;}
+.about-text p { margin-bottom: 15px; line-height: 1.7; max-width: 600px; margin-left: auto; margin-right: auto;}
+.about-text ul { list-style: none; padding-left: 0; margin-bottom: 20px; display: inline-block; text-align: left; }
+.about-text li { margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; }
+.about-text li i { color: var(--secondary-color); width: 20px; text-align: center; font-size: 1.1em; flex-shrink: 0;}
+
+/* --- Footer --- */
+.footer { background-color: var(--heading-color); color: #adb5bd; padding: 2rem 0; margin-top: auto; text-align: center; transition: background-color var(--transition-speed), color var(--transition-speed); }
+body[data-theme="dark"] .footer { background-color: #1f232b; color: #9aa1b9; }
+.footer p { margin-bottom: 10px; font-size: 0.9rem; }
+.social-icons a { color: #adb5bd; margin: 0 10px; font-size: 1.5rem; transition: color var(--transition-speed); }
+body[data-theme="dark"] .social-icons a { color: #9aa1b9; }
+.social-icons a:hover { color: var(--accent-color); }
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .main-content h1 { font-size: 1.8rem; }
+    .header-content { flex-direction: column; gap: 10px; }
+    .nav { justify-content: center;}
+    .drop-zone { padding: 30px 15px; }
+    .btn { width: auto; }
+    .btn-process { width: 100%; margin-top: 20px; }
+    .tool-selection { gap: 10px;}
+    .tool-controls { flex-direction: column; align-items: stretch; }
+    .tool-controls input[type="range"] { max-width: none; width: 100%; }
+    #brush-size-value, #blur-value { text-align: center; min-width: 50px; margin: 5px auto; }
+    .preview-wrapper { width: 100%; } /* Ensure wrapper fills container on smaller screens */
+}
+
+@media (max-width: 480px) {
+    html { font-size: 14px; }
+    .container { padding: 0 15px; }
+    .card { padding: 20px; }
+    .logo { font-size: 1.1rem; text-align: center; width: 100%; justify-content: center;}
+    .header-content { gap: 5px; }
+    .nav { gap: 10px;}
+    .nav a { font-size: 0.9rem; }
+    .theme-toggle-btn { font-size: 1.3rem; }
+    .main-content h1 { font-size: 1.6rem; }
+    .subtitle { font-size: 1rem; }
+    .drop-zone { padding: 25px 10px; font-size: 0.9rem;}
+    .drop-zone .drop-icon { font-size: 2.5rem; }
+    .preview-controls { gap: 8px; }
+    .preview-controls .btn { font-size: 0.8rem; padding: 5px 10px;}
+    .about-me-section h2 { font-size: 1.6rem; }
+    .about-text h3 { font-size: 1.3rem; }
+    .about-text li i { font-size: 1em; }
+    .tool-selection label { font-size: 0.9rem; padding: 6px 10px;}
+    .footer p { font-size: 0.85rem; }
+    .social-icons a { font-size: 1.4rem; }
+    .warning-note { padding: 10px 15px; font-size: 0.9rem;}
+    .input-box h2 { font-size: 1.2rem;}
+}
+    </style>
+
+    <script>
+        
+document.addEventListener('DOMContentLoaded', () => {
     // --- Element Selection ---
     const formFile = document.getElementById('api-form-file');
     const imageUpload = document.getElementById('image-upload');
@@ -104,12 +546,15 @@ body[data-theme="dark"] { --primary-color: #5e80cc; --secondary-color: #7c99d5; 
     const previewInstruction = document.getElementById('preview-instruction');
     const clearPreviewBtn = document.getElementById('clear-preview-btn');
     const processBtn = document.getElementById('process-btn');
+    const processHeader = document.getElementById('process-header');
     const loadingIndicator = document.getElementById('loading-indicator');
+    const loadingVideoNote = document.getElementById('loading-video-note');
     const resultsBox = document.getElementById('results-box');
     const errorMessageDiv = document.getElementById('error-message');
     const successMessageDiv = document.getElementById('success-message');
     const resultStatusP = document.getElementById('result-status');
     const resultMessageP = document.getElementById('result-message');
+    const resultDetailsContainer = document.getElementById('result-details-container');
     const resultDetailsDiv = document.getElementById('result-details');
     const resultImage = document.getElementById('result-image');
     const resultImageContainer = document.querySelector('.result-image-container');
@@ -127,206 +572,1043 @@ body[data-theme="dark"] { --primary-color: #5e80cc; --secondary-color: #7c99d5; 
     const brushControls = document.getElementById('brush-controls');
     const polygonControls = document.getElementById('polygon-controls');
     const finishPolygonBtn = document.getElementById('finish-polygon-btn');
+    const blurSlider = document.getElementById('blur-slider');
+    const blurValueSpan = document.getElementById('blur-value');
+    const blurAmountHidden = document.getElementById('blur-amount-hidden'); // Hidden input for form
 
     // --- State Variables ---
-    let currentTool = 'brush';
-    let isDrawing = false; // Mouse button down AND drawing action active
-    let isDrawingPolygon = false; // Specifically adding polygon points
-    let startX, startY, currentX, currentY;
-    let scaleX = 1, scaleY = 1;
-    let currentFile = null; let isVideoFile = false; let videoObjectURL = null;
-    let shapes = []; // { type: 'brush'/'box'/'polygon', data: ..., closed?: bool, size?: number }
-    let currentPolygonPoints = [];
-    let currentBrushSize = 10;
+    let currentTool = 'brush'; // 'brush', 'box', 'polygon'
+    let isDrawing = false; // Mouse button down AND actively drawing (brush/box)
+    let isAddingPolygonPoint = false; // Flag specifically for polygon point addition clicks
+    let startX, startY, currentX, currentY; // Coordinates for drawing operations
+    let scaleX = 1, scaleY = 1; // Scale factor between displayed preview size and original media size
+    let originalWidth = 0, originalHeight = 0; // Store original media dimensions
+    let currentFile = null; // Holds the File object
+    let isVideoFile = false; // Flag if the current file is a video
+    let videoObjectURL = null; // Stores the URL created for video preview
+    let shapes = []; // Stores completed drawings: { type: 'brush'/'box'/'polygon', data: ..., closed?: bool, size?: number }
+    let currentPolygonPoints = []; // Points for the polygon currently being drawn
+    let currentBrushSize = 10; // Current brush size from slider
+    let currentBlurAmount = 0; // Current blur amount from slider
+    let resizeObserver = null; // Observer for preview element resize
 
     // --- Utility Functions ---
     const showElement = (el) => { if (el) el.style.display = 'block'; };
-    const showFlexElement = (el) => { if (el) el.style.display = 'flex'; };
+    const showFlexElement = (el) => { if (el) el.style.display = 'flex'; }; // For flex containers like dropzone, loading
     const hideElement = (el) => { if (el) el.style.display = 'none'; };
-    const showInlineBlockElement = (el) => { if (el) el.style.display = 'inline-block'; };
+    const showInlineBlockElement = (el) => { if (el) el.style.display = 'inline-block'; }; // For buttons etc.
 
-    // --- Canvas Drawing ---
-    const clearCanvas = () => { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); };
+    // --- Canvas Drawing Functions ---
+    const clearCanvas = () => {
+        if (ctx) {
+             // Adjust for device pixel ratio scaling if used
+             const dpr = window.devicePixelRatio || 1;
+             // Need to clear the scaled buffer size
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    };
+
     const redrawCanvas = () => {
-        if (!ctx || !canvas || canvas.width === 0 || canvas.height === 0) return; clearCanvas();
-        // Draw finished shapes
+        if (!ctx || !canvas || canvas.width === 0 || canvas.height === 0) return;
+        clearCanvas();
+        const theme = document.body.getAttribute('data-theme') || 'light';
+        const dpr = window.devicePixelRatio || 1; // Get DPR
+
+        // Note: Coordinates (shape.data, currentPolygonPoints, startX/Y, currentX/Y)
+        // are stored relative to the DISPLAYED canvas size (CSS pixels).
+        // The canvas context is scaled by DPR, so drawing happens correctly on HiDPI.
+
+        // Draw finished shapes from the 'shapes' array
         shapes.forEach(shape => {
+            ctx.save(); // Save context state before drawing each shape
             ctx.beginPath();
             if (shape.type === 'brush' && shape.data.length >= 2) {
-                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-brush').trim() || 'rgba(255,0,0,0.7)';
-                ctx.lineWidth = shape.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 77, 77, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+                // Brush size is already relative to display, scale linewidth by DPR? No, context is scaled.
+                ctx.lineWidth = shape.size;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
                 ctx.moveTo(shape.data[0].x, shape.data[0].y);
                 for (let i = 1; i < shape.data.length; i++) { ctx.lineTo(shape.data[i].x, shape.data[i].y); }
                 ctx.stroke();
             } else if (shape.type === 'box' && shape.data) {
-                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-box').trim() || 'rgba(0,100,255,0.8)';
-                ctx.lineWidth = 2; ctx.strokeRect(shape.data.x, shape.data.y, shape.data.w, shape.data.h);
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(100, 150, 255, 0.8)' : 'rgba(0, 100, 255, 0.8)';
+                ctx.fillStyle = theme === 'dark' ? 'rgba(100, 150, 255, 0.3)' : 'rgba(0, 100, 255, 0.3)';
+                ctx.lineWidth = 2; // Consistent line width regardless of DPR? Or scale? Let's keep it simple.
+                ctx.fillRect(shape.data.x, shape.data.y, shape.data.w, shape.data.h);
+                ctx.strokeRect(shape.data.x, shape.data.y, shape.data.w, shape.data.h);
             } else if (shape.type === 'polygon' && shape.data.length >= 2) {
-                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').trim() || 'rgba(0,200,100,0.8)';
-                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').replace('0.8)', '0.4)') || 'rgba(0,200,100,0.4)';
-                 ctx.lineWidth = 2; ctx.moveTo(shape.data[0].x, shape.data[0].y);
-                 for (let i = 1; i < shape.data.length; i++) { ctx.lineTo(shape.data[i].x, shape.data[i].y); }
-                 if (shape.closed) { ctx.closePath(); ctx.fill(); } ctx.stroke();
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(100, 220, 150, 0.8)' : 'rgba(0, 200, 100, 0.8)';
+                ctx.fillStyle = theme === 'dark' ? 'rgba(100, 220, 150, 0.4)' : 'rgba(0, 200, 100, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.moveTo(shape.data[0].x, shape.data[0].y);
+                for (let i = 1; i < shape.data.length; i++) { ctx.lineTo(shape.data[i].x, shape.data[i].y); }
+                if (shape.closed) {
+                     ctx.closePath();
+                     ctx.fill(); // Fill only closed polygons
+                }
+                ctx.stroke();
             }
+            ctx.restore(); // Restore context state
         });
-        // Draw current interactive element
+
+        // Draw current interactive element (e.g., rubber-band box, live brush stroke)
         if (isDrawing) {
-            if (currentTool === 'brush' && currentPolygonPoints.length >= 2) { // Re-use currentPolygonPoints for live brush
-                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-brush').trim() || 'rgba(255,0,0,0.7)';
-                 ctx.lineWidth = currentBrushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
-                 for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); } ctx.stroke();
+             ctx.save();
+            if (currentTool === 'brush' && currentPolygonPoints.length >= 1) {
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(255, 77, 77, 0.7)' : 'rgba(255, 0, 0, 0.7)';
+                ctx.lineWidth = currentBrushSize;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
+                for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); }
+                ctx.stroke();
             } else if (currentTool === 'box' && startX !== undefined) {
-                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-box').trim() || 'rgba(0,100,255,0.8)';
-                 ctx.lineWidth = 2; const cW = currentX - startX; const cH = currentY - startY; ctx.strokeRect(startX, startY, cW, cH);
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(100, 150, 255, 0.8)' : 'rgba(0, 100, 255, 0.8)';
+                ctx.fillStyle = theme === 'dark' ? 'rgba(100, 150, 255, 0.2)' : 'rgba(0, 100, 255, 0.2)';
+                ctx.lineWidth = 1; // Thin line for rubber-banding
+                const currentWidth = currentX - startX;
+                const currentHeight = currentY - startY;
+                ctx.strokeRect(startX, startY, currentWidth, currentHeight);
+                ctx.fillRect(startX, startY, currentWidth, currentHeight);
             }
+             ctx.restore();
         }
-        // Draw current polygon points/lines
+
+        // Draw current polygon points and line-to-cursor
         if (currentTool === 'polygon' && currentPolygonPoints.length > 0) {
-             ctx.fillStyle = 'rgba(0, 0, 255, 0.6)'; currentPolygonPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+             ctx.save();
+             // Draw points (small circles)
+             ctx.fillStyle = 'rgba(0, 0, 255, 0.7)';
+             const pointRadius = 4; // Adjust point size as needed
+             currentPolygonPoints.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, pointRadius, 0, Math.PI * 2); ctx.fill(); });
+
+             // Draw connecting lines for existing points
              if (currentPolygonPoints.length >= 2) {
-                 ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--canvas-draw-color-polygon').trim() || 'rgba(0,200,100,0.8)';
-                 ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
-                 for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); } ctx.stroke();
+                 ctx.strokeStyle = theme === 'dark' ? 'rgba(100, 220, 150, 0.8)' : 'rgba(0, 200, 100, 0.8)';
+                 ctx.lineWidth = 1; // Thin line connecting points
+                 ctx.beginPath();
+                 ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
+                 for (let i = 1; i < currentPolygonPoints.length; i++) { ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y); }
+                 ctx.stroke();
              }
-             if (currentX !== undefined && !isDrawingPolygon) { // Draw line to cursor only when not actively dragging (isDrawing refers to drag state)
-                 ctx.strokeStyle = 'rgba(150, 150, 150, 0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(currentPolygonPoints[currentPolygonPoints.length - 1].x, currentPolygonPoints[currentPolygonPoints.length - 1].y); ctx.lineTo(currentX, currentY); ctx.stroke();
+
+             // Draw dashed line from last point to current cursor position (if not adding a point)
+             if (currentX !== undefined && currentY !== undefined && !isAddingPolygonPoint) {
+                 ctx.strokeStyle = 'rgba(150, 150, 150, 0.6)';
+                 ctx.lineWidth = 1;
+                 ctx.setLineDash([4, 4]); // Dashed line style
+                 ctx.beginPath();
+                 ctx.moveTo(currentPolygonPoints[currentPolygonPoints.length - 1].x, currentPolygonPoints[currentPolygonPoints.length - 1].y);
+                 ctx.lineTo(currentX, currentY);
+                 ctx.stroke();
+                 ctx.setLineDash([]); // Reset to solid line
              }
+             ctx.restore();
         }
     };
 
-    // --- Buttons & UI State ---
-    const updateButtonStates = () => { const hasDrawings = shapes.length > 0; processBtn.disabled = !(currentFile && hasDrawings); if (hasDrawings) { showInlineBlockElement(undoBtn); showInlineBlockElement(clearDrawingBtn); } else { hideElement(undoBtn); hideElement(clearDrawingBtn); } hideElement(finishPolygonBtn); if (currentTool === 'polygon' && currentPolygonPoints.length >= 3) { showInlineBlockElement(finishPolygonBtn); } };
 
-    // --- Canvas Sizing ---
-    const sizeCanvasToPreview = (previewElement) => { if (!canvas || !previewElement) { console.warn("Cannot size: canvas or preview missing"); return false; } const dW = previewElement.offsetWidth; const dH = previewElement.offsetHeight; if (dW <= 0 || dH <= 0) { console.warn(`Cannot size: preview dimensions invalid ${dW}x${dH}`); return false; } canvas.width = dW; canvas.height = dH; let oW, oH; if (previewElement.tagName === 'VIDEO') { oW = previewElement.videoWidth; oH = previewElement.videoHeight; } else { oW = previewElement.naturalWidth; oH = previewElement.naturalHeight; } scaleX = (oW > 0 && dW > 0) ? oW / dW : 1; scaleY = (oH > 0 && dH > 0) ? oH / dH : 1; console.log(`Canvas: ${dW}x${dH}. Scale X/Y: ${scaleX.toFixed(3)}/${scaleY.toFixed(3)}`); redrawCanvas(); return true; };
+    // --- UI State and Button Management ---
+    const updateButtonStates = () => {
+        const hasDrawings = shapes.length > 0 || (currentTool === 'polygon' && currentPolygonPoints.length > 0);
+        const canProcess = currentFile && shapes.length > 0; // Can only process if file loaded AND shapes exist
 
-    // --- Preview Logic ---
+        processBtn.disabled = !canProcess;
+
+        if (hasDrawings) {
+            showInlineBlockElement(undoBtn);
+            showInlineBlockElement(clearDrawingBtn);
+        } else {
+            hideElement(undoBtn);
+            hideElement(clearDrawingBtn);
+        }
+
+        // Finish Polygon button visibility
+        hideElement(finishPolygonBtn);
+        if (currentTool === 'polygon' && currentPolygonPoints.length >= 3) {
+            showInlineBlockElement(finishPolygonBtn);
+        }
+    };
+
+    // --- Canvas Sizing and Scaling ---
+    const sizeCanvasToPreview = (previewElement) => {
+        if (!canvas || !previewElement) {
+            console.warn("Cannot size canvas: Required element missing.");
+            return false;
+        }
+
+        const displayWidth = previewElement.offsetWidth;
+        const displayHeight = previewElement.offsetHeight;
+
+        if (displayWidth <= 0 || displayHeight <= 0) {
+            console.warn(`Cannot size canvas yet: Preview dimensions are ${displayWidth}x${displayHeight}. Waiting...`);
+            return false;
+        }
+
+        // Get original media dimensions
+        if (previewElement.tagName === 'VIDEO') {
+            originalWidth = previewElement.videoWidth;
+            originalHeight = previewElement.videoHeight;
+        } else { // Image
+            originalWidth = previewElement.naturalWidth;
+            originalHeight = previewElement.naturalHeight;
+        }
+
+         if (originalWidth <= 0 || originalHeight <= 0) {
+            console.warn(`Cannot size canvas: Original media dimensions invalid ${originalWidth}x${originalHeight}. Media might not be fully loaded.`);
+            return false;
+         }
+
+        // Set canvas display size (CSS pixels) to match the preview exactly
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
+
+        // Set canvas internal drawing buffer size (physical pixels) for HiDPI
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = displayWidth * dpr;
+        canvas.height = displayHeight * dpr;
+
+        // Scale the drawing context to normalize coordinates to CSS pixels
+        if (ctx) {
+             ctx.resetTransform(); // Reset any previous scaling/transforms
+             ctx.scale(dpr, dpr);
+        } else {
+             console.error("Canvas context (ctx) is null during sizing!");
+             return false;
+        }
+
+        // Calculate scale factors for converting display coordinates (CSS px) back to original media coordinates
+        scaleX = originalWidth / displayWidth;
+        scaleY = originalHeight / displayHeight;
+
+        console.log(`Canvas Resized & Scaled:
+         - Display Size: ${displayWidth}x${displayHeight} (CSS px)
+         - Buffer Size: ${canvas.width}x${canvas.height} (Physical px, DPR: ${dpr})
+         - Original Media: ${originalWidth}x${originalHeight}
+         - Scale (Orig/Display): X=${scaleX.toFixed(3)}, Y=${scaleY.toFixed(3)}`);
+
+        redrawCanvas(); // Redraw any existing shapes after resizing
+        return true;
+    };
+
+     // Observer to automatically resize canvas if the preview element's size changes
+     const setupResizeObserver = (previewElement) => {
+         if (resizeObserver) {
+             resizeObserver.disconnect(); // Stop observing previous element
+         }
+         if (!window.ResizeObserver) {
+             console.warn("ResizeObserver not supported. Canvas might not resize automatically.");
+             return;
+         }
+         resizeObserver = new ResizeObserver(entries => {
+             for (let entry of entries) {
+                 if (entry.target === previewElement) {
+                     console.log("ResizeObserver detected preview size change. Resizing canvas.");
+                     sizeCanvasToPreview(previewElement);
+                 }
+             }
+         });
+         resizeObserver.observe(previewElement);
+     };
+
+
+    // --- Media Preview Handling ---
     const showPreview = (file) => {
-        currentFile = file; shapes = []; currentPolygonPoints = []; isVideoFile = file.type.startsWith('video');
-        resetDrawingState(); hideElement(resultsBox); hideElement(loadingIndicator);
-        if (videoObjectURL && videoPreview.src === videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = null; }
-        imagePreview.onload = null; videoPreview.onloadedmetadata = null; videoPreview.onerror = null;
-        hideElement(imagePreview); hideElement(videoPreview);
+        currentFile = file;
+        shapes = []; // Clear previous shapes
+        currentPolygonPoints = []; // Clear polygon points
+        isVideoFile = file.type.startsWith('video');
+
+        resetDrawingState(); // Clear canvas, reset interaction states
+        hideElement(resultsBox);
+        hideElement(loadingIndicator);
+        hideElement(dropZone); // Hide upload prompt
+        showElement(previewContainer); // Show the main preview area
+        showElement(processHeader); // Show "3. Process" header
+        updateButtonStates(); // Update buttons (Process should be disabled initially)
+
+        // Revoke previous video object URL to prevent memory leaks
+        if (videoObjectURL) {
+            URL.revokeObjectURL(videoObjectURL);
+            videoObjectURL = null;
+            console.log("Revoked previous video Object URL.");
+        }
+
+        // Reset media elements and listeners
+        imagePreview.onload = null; imagePreview.onerror = null; imagePreview.src = '#'; hideElement(imagePreview);
+        videoPreview.onloadedmetadata = null; videoPreview.onerror = null; videoPreview.src = ''; hideElement(videoPreview);
+        if (resizeObserver) resizeObserver.disconnect(); // Stop observing previous element
+
+        let previewElement = null; // The element to display (img or video)
 
         if (isVideoFile) {
-            console.log("Video selected."); previewInstruction.textContent = "Pause video, then use tool to mark objects.";
-            try { videoObjectURL = URL.createObjectURL(file); } catch (e) { console.error("Error creating object URL:", e); showError("Could not create video URL."); clearAll(); return; }
-            videoPreview.src = videoObjectURL; showElement(videoPreview); hideElement(imagePreview);
-            videoPreview.onloadedmetadata = () => { console.log("Video metadata loaded."); if (!sizeCanvasToPreview(videoPreview)) { setTimeout(() => sizeCanvasToPreview(videoPreview), 250); } resetDrawingState(); }; // Delay retry slightly longer
-            videoPreview.onerror = (e) => { console.error("Video load error:", e); showError(`Video preview error: ${e.message || 'Cannot play video'}`); clearAll(); };
+            console.log("Setting up video preview for:", file.name);
+            previewInstruction.textContent = "Video loading... Use controls, pause, then mark objects.";
+            previewElement = videoPreview;
+            showElement(videoPreview);
+
+            try {
+                videoObjectURL = URL.createObjectURL(file);
+                videoPreview.src = videoObjectURL;
+
+                // --- Video Event Handlers ---
+                videoPreview.onloadedmetadata = () => {
+                    console.log(`Video metadata loaded: ${videoPreview.videoWidth}x${videoPreview.videoHeight}`);
+                    previewInstruction.textContent = "Video ready. Use controls, pause, then mark objects.";
+                    // Attempt initial sizing, then observe for changes
+                    sizeCanvasToPreview(videoPreview);
+                    setupResizeObserver(videoPreview);
+                    resetDrawingState(); // Redraw clean canvas
+                };
+                videoPreview.onerror = (e) => {
+                    console.error("Video Loading Error:", e, videoPreview.error);
+                    const errorMsg = videoPreview.error ? ` (${videoPreview.error.code}: ${videoPreview.error.message})` : '';
+                    showError(`Failed to load video preview${errorMsg}. The format might be unsupported or the file corrupt.`);
+                    clearAll(); // Reset UI
+                };
+
+            } catch (e) {
+                console.error("Error creating video object URL:", e);
+                showError("Could not create video preview. The file might be invalid or corrupted.");
+                clearAll();
+                return;
+            }
         } else { // Image
-            console.log("Image selected."); previewInstruction.textContent = "Use tool to mark objects."; hideElement(videoPreview);
+            console.log("Setting up image preview for:", file.name);
+            previewInstruction.textContent = "Image loading...";
+            previewElement = imagePreview;
+            showElement(imagePreview);
+
             const reader = new FileReader();
-            reader.onload = (e) => { imagePreview.src = e.target.result; showElement(imagePreview); imagePreview.onload = () => { console.log("Image loaded."); if (!sizeCanvasToPreview(imagePreview)) { console.warn("Initial image sizing failed, maybe retry?"); } resetDrawingState(); }; if (imagePreview.complete && imagePreview.naturalWidth > 0) { imagePreview.onload(); } }
-            reader.onerror = (err) => { console.error("FileReader error:", err); showError("Could not read image."); clearAll(); }; reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                // --- Image Event Handlers ---
+                imagePreview.onload = () => {
+                     console.log(`Image loaded: ${imagePreview.naturalWidth}x${imagePreview.naturalHeight}`);
+                     previewInstruction.textContent = "Image loaded. Use tools to mark objects.";
+                     // Attempt initial sizing, then observe for changes
+                     sizeCanvasToPreview(imagePreview);
+                     setupResizeObserver(imagePreview);
+                     resetDrawingState(); // Redraw clean canvas
+                };
+                imagePreview.onerror = (err) => {
+                     console.error("Image Preview Load Error:", err);
+                     showError("Could not load the image preview.");
+                     clearAll();
+                };
+                // Handle case where image might be cached and already loaded
+                if (imagePreview.complete && imagePreview.naturalWidth > 0) {
+                     imagePreview.onload();
+                }
+            };
+            reader.onerror = (err) => {
+                console.error("FileReader Error:", err);
+                showError("Could not read the image file.");
+                clearAll();
+            };
+            reader.readAsDataURL(file);
         }
-        showElement(previewContainer); hideElement(dropZone); updateButtonStates();
     };
 
-    // --- Reset/Clear ---
-    const resetDrawingState = () => { clearCanvas(); isDrawing = false; isDrawingPolygon = false; currentPolygonPoints = []; startX = startY = currentX = currentY = undefined; redrawCanvas(); updateButtonStates(); };
-    const undoLast = () => { if (shapes.length > 0) { shapes.pop(); console.log(`Undone. ${shapes.length} left.`); redrawCanvas(); } updateButtonStates(); };
-    const clearAllDrawings = () => { shapes = []; console.log("Cleared drawings."); resetDrawingState(); };
-    const clearAll = () => { currentFile = null; isVideoFile = false; if (imageUpload) imageUpload.value = ''; if (imagePreview) { imagePreview.src = '#'; imagePreview.onload = null; hideElement(imagePreview); } if (videoPreview) { videoPreview.pause(); videoPreview.src = ''; videoPreview.onloadedmetadata = null; videoPreview.onerror = null; hideElement(videoPreview); } if (videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = null; } hideElement(previewContainer); if (dropZone) dropZone.style.display = ''; shapes = []; resetDrawingState(); hideElement(resultsBox); hideElement(loadingIndicator); if (processBtn) processBtn.disabled = true; };
+    // --- Reset and Clear Functions ---
+    const resetDrawingState = () => {
+        // Only resets the *interaction* state, not the saved shapes
+        isDrawing = false;
+        isAddingPolygonPoint = false;
+        // currentPolygonPoints = []; // Don't clear points here, only on tool change or explicit clear
+        startX = startY = currentX = currentY = undefined;
+        clearCanvas(); // Clear visual canvas
+        redrawCanvas(); // Redraw existing shapes if any
+        updateButtonStates(); // Update button enable/disable states
+    };
 
-    // --- Theme Toggle ---
-    const applyTheme = (t) => { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }; if (themeToggleButton) { themeToggleButton.addEventListener('click', () => { const cT=document.body.getAttribute('data-theme')||'light'; const nT=cT==='light'?'dark':'light'; applyTheme(nT); }); const sT=localStorage.getItem('theme')||'light'; applyTheme(sT); }
+    const undoLast = () => {
+        // If currently drawing a polygon, remove the last point
+        if (currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+            currentPolygonPoints.pop();
+            console.log(`Undid polygon point. ${currentPolygonPoints.length} points left.`);
+        }
+        // Otherwise, remove the last completed shape
+        else if (shapes.length > 0) {
+            shapes.pop();
+            console.log(`Undid last shape. ${shapes.length} shapes left.`);
+        } else {
+            console.log("Nothing to undo.");
+            return; // Nothing changed
+        }
+        redrawCanvas();
+        updateButtonStates();
+    };
 
-    // --- Drag & Drop / File Input ---
-    const handleFileSelect = (file) => { if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) { showPreview(file); } else { showError("Please select/drop a valid image or video file."); } };
-    if (dropZone) { ['dragenter','dragover','dragleave','drop'].forEach(eN=>dropZone.addEventListener(eN,(e)=>{e.preventDefault();e.stopPropagation();},!1)); ['dragenter','dragover'].forEach(eN=>dropZone.addEventListener(eN,()=>dropZone.classList.add('dragover'),!1)); ['dragleave','drop'].forEach(eN=>dropZone.addEventListener(eN,()=>dropZone.classList.remove('dragover'),!1)); dropZone.addEventListener('drop',(e)=>{ const f=e.dataTransfer.files; if(f.length>0){ handleFileSelect(f[0]); } },!1); dropZone.addEventListener('click',()=>{ if(!previewContainer||previewContainer.style.display==='none'){if(imageUpload)imageUpload.click();}}); }
-    if (imageUpload) { imageUpload.addEventListener('change', (e) => { if (e.target.files && e.target.files.length > 0) { handleFileSelect(e.target.files[0]); } }); }
+    const clearAllDrawings = () => {
+        shapes = []; // Clear completed shapes
+        currentPolygonPoints = []; // Clear any in-progress polygon
+        console.log("Cleared all drawings.");
+        resetDrawingState(); // Reset interaction state and redraw clean canvas
+    };
 
-    // --- Buttons ---
-    if (clearPreviewBtn) { clearPreviewBtn.addEventListener('click', clearAll); } if (undoBtn) { undoBtn.addEventListener('click', undoLast); } if (clearDrawingBtn) { clearDrawingBtn.addEventListener('click', clearAllDrawings); } if (finishPolygonBtn) { finishPolygonBtn.addEventListener('click', () => finishCurrentPolygon(true)); }
+    const clearAll = () => {
+         console.log("Clearing entire state: file, preview, drawings, results.");
+         currentFile = null; isVideoFile = false;
+         originalWidth = 0; originalHeight = 0; scaleX = 1; scaleY = 1;
+         if (resizeObserver) resizeObserver.disconnect(); // Stop observing
 
-    // --- Tool Selection ---
-    toolRadios.forEach(radio => { radio.addEventListener('change', (e) => { currentTool = e.target.value; console.log("Tool:", currentTool); isDrawing = false; isDrawingPolygon = (currentTool === 'polygon'); currentPolygonPoints = []; // Clear polygon points on tool change
-        redrawCanvas(); updateButtonStates(); if (currentTool === 'brush') { showElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair'; } else if (currentTool === 'polygon') { hideElement(brushControls); showElement(polygonControls); canvas.style.cursor = 'copy'; } else { hideElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair'; } }); });
+         // Reset file input visually
+         if (imageUpload) imageUpload.value = '';
 
-    // --- Brush Size ---
-    if (brushSizeSlider && brushSizeValueSpan) { currentBrushSize = parseInt(brushSizeSlider.value, 10); brushSizeValueSpan.textContent = currentBrushSize; brushSizeSlider.addEventListener('input', (e) => { currentBrushSize = parseInt(e.target.value, 10); brushSizeValueSpan.textContent = currentBrushSize; }); }
+         // Clear media previews and revoke URLs
+         if (imagePreview) { imagePreview.src = '#'; hideElement(imagePreview); }
+         if (videoPreview) { videoPreview.pause(); videoPreview.src = ''; hideElement(videoPreview); }
+         if (videoObjectURL) { URL.revokeObjectURL(videoObjectURL); videoObjectURL = null; }
 
-    // --- Polygon Finish ---
-    const finishCurrentPolygon = (forceClose = true) => { if (currentPolygonPoints.length >= 3) { shapes.push({ type: 'polygon', data: [...currentPolygonPoints], closed: forceClose }); } else { console.log("Polygon too small."); } currentPolygonPoints = []; isDrawing = false; isDrawingPolygon = false; redrawCanvas(); updateButtonStates(); };
+         // Reset UI visibility
+         hideElement(previewContainer);
+         hideElement(processHeader);
+         showFlexElement(dropZone); // Show upload area again
+         hideElement(resultsBox);
+         hideElement(loadingIndicator);
 
-    // --- Canvas Events ---
-    if (canvas && ctx) {
-        const getMousePos = (evt) => { const rect = canvas.getBoundingClientRect(); return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }; };
-        canvas.addEventListener('mousedown', (e) => { if (!currentFile) return; const pos = getMousePos(e);
-            if (currentTool === 'brush') { isDrawing = true; currentPolygonPoints = [{ x: pos.x, y: pos.y }]; } // Use polygon points for temp brush stroke
-            else if (currentTool === 'box') { isDrawing = true; startX = pos.x; startY = pos.y; currentX = startX; currentY = startY; }
-            else if (currentTool === 'polygon') { isDrawing = false; isDrawingPolygon = true; currentPolygonPoints.push({ x: pos.x, y: pos.y }); const pts=currentPolygonPoints; if(pts.length>=3){const dx=pos.x-pts[0].x; const dy=pos.y-pts[0].y; const d=Math.sqrt(dx*dx+dy*dy); const thresh=10/(Math.min(scaleX,scaleY)||1); if(d<thresh){finishCurrentPolygon(true);return;}} redrawCanvas(); updateButtonStates(); }
+         // Clear drawings and interaction state
+         shapes = [];
+         currentPolygonPoints = []; // Ensure points are cleared too
+         resetDrawingState();
+
+         // Reset options
+         if (blurSlider) blurSlider.value = 0;
+         if (blurValueSpan) blurValueSpan.textContent = 'None';
+         if (blurAmountHidden) blurAmountHidden.value = '0';
+         currentBlurAmount = 0;
+
+         updateButtonStates(); // Ensure buttons are correctly disabled
+    };
+
+    // --- Theme Management ---
+    const applyTheme = (theme) => {
+         document.body.setAttribute('data-theme', theme);
+         localStorage.setItem('theme', theme);
+         console.log(`Theme applied: ${theme}`);
+         redrawCanvas(); // Redraw canvas with new theme colors if needed
+     };
+
+     const setupTheme = () => {
+        if (themeToggleButton) {
+            themeToggleButton.addEventListener('click', () => {
+                const currentTheme = document.body.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                applyTheme(newTheme);
+            });
+            // Apply saved theme or default to light
+            const savedTheme = localStorage.getItem('theme');
+            const initialTheme = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
+            applyTheme(initialTheme);
+        } else {
+            applyTheme('light'); // Default if no toggle button
+        }
+     }
+
+    // --- File Input and Drag/Drop Handling ---
+    const handleFileSelect = (file) => {
+        if (!file) {
+            showError("No file provided.");
+            return;
+        }
+        const maxSize = 100 * 1024 * 1024; // 100 MB limit from backend config
+        const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
+        const allowedVideoTypesPrefix = 'video/'; // Accept any video/* MIME type
+
+        console.log(`File selected: Name: ${file.name}, Type: ${file.type || 'N/A'}, Size: ${(file.size / (1024*1024)).toFixed(2)} MB`);
+
+        // Validate Size
+        if (file.size > maxSize) {
+             showError(`File too large (${(file.size / (1024*1024)).toFixed(1)} MB). Max size: 100 MB.`);
+             clearAll(); // Reset UI
+             return;
+        }
+
+        // Validate Type
+        if (allowedImageTypes.includes(file.type) || file.type?.startsWith(allowedVideoTypesPrefix)) {
+            clearAll(); // Clear previous state before showing new preview
+            showPreview(file);
+        } else {
+            showError(`Unsupported file type: '${file.type || 'Unknown'}'. Please upload a common image or video format.`);
+            clearAll(); // Reset UI
+        }
+    };
+
+    const setupFileInputs = () => {
+        // Drag and Drop
+        if (dropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    handleFileSelect(files[0]); // Process the first dropped file
+                }
+            }, false);
+            // Click to upload
+            dropZone.addEventListener('click', () => {
+                 if (imageUpload && (!previewContainer || previewContainer.style.display === 'none')) {
+                     imageUpload.click();
+                 }
+             });
+        }
+        // Standard File Input
+        if (imageUpload) {
+            imageUpload.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
+    }
+
+    // --- Button Event Listeners ---
+    const setupButtonListeners = () => {
+        if (clearPreviewBtn) { clearPreviewBtn.addEventListener('click', clearAll); }
+        if (undoBtn) { undoBtn.addEventListener('click', undoLast); }
+        if (clearDrawingBtn) { clearDrawingBtn.addEventListener('click', clearAllDrawings); }
+        if (finishPolygonBtn) { finishPolygonBtn.addEventListener('click', () => finishCurrentPolygon(true)); }
+    };
+
+    // --- Tool Selection Logic ---
+    const triggerToolChange = () => {
+         // Handles actions needed when the drawing tool changes
+         const selectedTool = document.querySelector('input[name="draw-tool"]:checked');
+         currentTool = selectedTool ? selectedTool.value : 'brush'; // Default to brush if none selected
+         console.log("Tool changed to:", currentTool);
+
+         // Reset interaction states relevant to tool switching
+         isDrawing = false;
+         isAddingPolygonPoint = false;
+         // Keep currentPolygonPoints if switching TO polygon, clear if switching AWAY
+         if (currentTool !== 'polygon') {
+             currentPolygonPoints = [];
+         }
+         startX = startY = currentX = currentY = undefined; // Clear box start points
+
+         // Update UI elements (controls visibility, cursor style)
+         if (currentTool === 'brush') {
+             showElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair'; // Or custom brush cursor
+         } else if (currentTool === 'polygon') {
+             hideElement(brushControls); showElement(polygonControls); canvas.style.cursor = 'copy';
+         } else { // Box tool
+             hideElement(brushControls); hideElement(polygonControls); canvas.style.cursor = 'crosshair';
+         }
+
+         redrawCanvas(); // Redraw to remove transient elements like line-to-cursor
+         updateButtonStates(); // Update button states (e.g., Finish Polygon)
+     }
+
+    const setupToolSelection = () => {
+        toolRadios.forEach(radio => {
+            radio.addEventListener('change', triggerToolChange);
         });
-        canvas.addEventListener('mousemove', (e) => { if (!currentFile) return; const pos = getMousePos(e); currentX = pos.x; currentY = pos.y; // Always track mouse position over canvas
-            if (isDrawing) { if (currentTool === 'brush') { currentPolygonPoints.push({ x: pos.x, y: pos.y }); } redrawCanvas(); } // Redraw rubber band for brush/box
-            else if (currentTool === 'polygon' && currentPolygonPoints.length > 0) { redrawCanvas(); } // Redraw polygon line to cursor
-        });
-        canvas.addEventListener('mouseup', (e) => { if (!currentFile || !isDrawing || currentTool === 'polygon') return; // Polygon adds points on mousedown
-            isDrawing = false; const pos = getMousePos(e);
-            if (currentTool === 'brush') { if (currentPolygonPoints.length > 1) { shapes.push({ type: 'brush', data: [...currentPolygonPoints], size: currentBrushSize }); } currentPolygonPoints = []; }
-            else if (currentTool === 'box') { const x1=Math.min(startX,pos.x); const y1=Math.min(startY,pos.y); const x2=Math.max(startX,pos.x); const y2=Math.max(startY,pos.y); const fW=x2-x1; const fH=y2-y1; if(fW>3 && fH>3){ shapes.push({ type: 'box', data: { x: x1, y: y1, w: fW, h: fH } }); } startX = startY = currentX = currentY = undefined; }
-            redrawCanvas(); updateButtonStates();
-        });
-        canvas.addEventListener('mouseleave', (e) => { // Use mouseup logic for consistency if dragging brush/box off canvas
-            if (isDrawing && (currentTool === 'brush' || currentTool === 'box')) {
-                 console.log("Mouse left, finishing drawing (Brush/Box).");
-                 const pos = getMousePos(e); // Use last known position within canvas bounds ideally
-                 isDrawing = false;
-                 if (currentTool === 'brush') { if (currentPolygonPoints.length > 1) { shapes.push({ type: 'brush', data: [...currentPolygonPoints], size: currentBrushSize }); } currentPolygonPoints = []; }
-                 else if (currentTool === 'box') { const x1=Math.min(startX,pos.x); const y1=Math.min(startY,pos.y); const x2=Math.max(startX,pos.x); const y2=Math.max(startY,pos.y); const fW=x2-x1; const fH=y2-y1; if(fW>3 && fH>3){ shapes.push({ type: 'box', data: { x: x1, y: y1, w: fW, h: fH } }); } startX = startY = currentX = currentY = undefined; }
-                 redrawCanvas(); updateButtonStates();
+         // Trigger once on load to set initial state based on default checked radio
+         triggerToolChange();
+    };
+
+
+    // --- Tool Option Sliders (Brush Size, Blur) ---
+    const setupOptionSliders = () => {
+        // Brush Size
+        if (brushSizeSlider && brushSizeValueSpan) {
+            currentBrushSize = parseInt(brushSizeSlider.value, 10);
+            brushSizeValueSpan.textContent = currentBrushSize;
+            brushSizeSlider.addEventListener('input', (e) => {
+                currentBrushSize = parseInt(e.target.value, 10);
+                brushSizeValueSpan.textContent = currentBrushSize;
+            });
+        }
+        // Blur Amount
+         if (blurSlider && blurValueSpan && blurAmountHidden) {
+             const updateBlurDisplay = () => {
+                 currentBlurAmount = parseInt(blurSlider.value, 10);
+                 // Show kernel size (odd number) or "None"
+                 blurValueSpan.textContent = currentBlurAmount === 0 ? 'None' : `${currentBlurAmount * 2 + 1}x${currentBlurAmount * 2 + 1}`;
+                 blurAmountHidden.value = currentBlurAmount; // Update hidden input for form submission
+             }
+             blurSlider.addEventListener('input', updateBlurDisplay);
+             updateBlurDisplay(); // Set initial value display
+         }
+    }
+
+
+    // --- Polygon Finishing Logic ---
+    const finishCurrentPolygon = (forceClose = true) => {
+        if (currentTool !== 'polygon' || currentPolygonPoints.length < 3) {
+            console.log("Cannot finish polygon: Tool is not Polygon or less than 3 points.");
+            return;
+        }
+
+        shapes.push({ type: 'polygon', data: [...currentPolygonPoints], closed: forceClose });
+        console.log("Finished polygon shape.");
+
+        // Reset polygon drawing state
+        currentPolygonPoints = [];
+        isDrawing = false; // Should be false anyway for polygon
+        isAddingPolygonPoint = false;
+        redrawCanvas(); // Show the final filled/closed shape
+        updateButtonStates(); // Update buttons (disable finish, enable process if needed)
+    };
+
+    // --- Canvas Event Listeners Setup ---
+    const setupCanvasEventListeners = () => {
+        if (!canvas || !ctx) {
+            console.error("Canvas or Context not available, cannot add drawing listeners.");
+            showError("Drawing feature failed to initialize. Please refresh.");
+            return;
+        }
+
+        // Helper to get event position relative to canvas (in CSS pixels)
+        const getEventPos = (evt) => {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            // Handle mouse and touch events consistently
+            if (evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX; clientY = evt.touches[0].clientY;
+            } else if (evt.changedTouches && evt.changedTouches.length > 0) {
+                clientX = evt.changedTouches[0].clientX; clientY = evt.changedTouches[0].clientY;
             } else {
-                // If just moving mouse off (not drawing), clear current position for polygon line
-                currentX = undefined; currentY = undefined;
-                if (currentTool === 'polygon') redrawCanvas(); // Redraw to remove line to cursor
+                clientX = evt.clientX; clientY = evt.clientY;
+            }
+            // Calculate position relative to the canvas element's bounding box
+            const canvasX = clientX - rect.left;
+            const canvasY = clientY - rect.top;
+            return { x: canvasX, y: canvasY };
+        };
+
+        // --- Mouse Events ---
+        canvas.addEventListener('mousedown', (e) => {
+            if (!currentFile || e.button !== 0) return; // Only handle left mouse button
+            e.preventDefault(); // Prevent text selection etc.
+            const pos = getEventPos(e);
+
+            if (currentTool === 'brush') {
+                isDrawing = true;
+                currentPolygonPoints = [{ x: pos.x, y: pos.y }]; // Start new brush path
+                redrawCanvas();
+            } else if (currentTool === 'box') {
+                isDrawing = true;
+                startX = pos.x; startY = pos.y;
+                currentX = startX; currentY = startY; // Initialize for rubber-banding
+            } else if (currentTool === 'polygon') {
+                 isDrawing = false; // Not dragging for polygon
+                 isAddingPolygonPoint = true; // Signal that a point is being added
+                 currentPolygonPoints.push({ x: pos.x, y: pos.y });
+                 console.log(`Added polygon point ${currentPolygonPoints.length} at (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)})`);
+
+                 // Check for closing click near the start point
+                 if (currentPolygonPoints.length >= 3) {
+                     const firstPoint = currentPolygonPoints[0];
+                     const dx = pos.x - firstPoint.x;
+                     const dy = pos.y - firstPoint.y;
+                     const dist = Math.sqrt(dx * dx + dy * dy);
+                     const closeThreshold = 10 / ((window.devicePixelRatio || 1)); // Threshold in CSS pixels (adjust if needed)
+                     if (dist < closeThreshold) {
+                         console.log("Clicked near start point, closing polygon.");
+                         finishCurrentPolygon(true);
+                         return; // Exit early as polygon is complete
+                     }
+                 }
+                 redrawCanvas();
+                 updateButtonStates();
+                 // Reset flag shortly after to allow line-to-cursor rendering on mousemove
+                 setTimeout(() => { isAddingPolygonPoint = false; }, 50);
+             }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!currentFile) return;
+            e.preventDefault();
+            const pos = getEventPos(e);
+            currentX = pos.x; currentY = pos.y; // Update cursor position
+
+            if (isDrawing) { // Drawing brush or box
+                if (currentTool === 'brush') {
+                    currentPolygonPoints.push({ x: pos.x, y: pos.y });
+                }
+                redrawCanvas(); // Update brush path or box rubber-band
+            } else if (currentTool === 'polygon' && currentPolygonPoints.length > 0 && !isAddingPolygonPoint) {
+                // Redraw to show line from last polygon point to cursor
+                redrawCanvas();
             }
         });
-        canvas.addEventListener('mouseenter', (e) => { // Update current position when re-entering
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!currentFile || e.button !== 0) return;
+            e.preventDefault();
+
+            if (isDrawing) { // Finalizing brush or box
+                isDrawing = false;
+                const pos = getEventPos(e); // Get final position
+
+                if (currentTool === 'brush') {
+                    if (currentPolygonPoints.length > 1) {
+                        shapes.push({ type: 'brush', data: [...currentPolygonPoints], size: currentBrushSize });
+                        console.log(`Finished brush shape (${currentPolygonPoints.length} points).`);
+                    } else { console.log("Brush stroke too short."); }
+                    currentPolygonPoints = []; // Clear temporary path
+                } else if (currentTool === 'box') {
+                    if (startX === undefined) return; // Should not happen if isDrawing is true
+                    const x1 = Math.min(startX, pos.x); const y1 = Math.min(startY, pos.y);
+                    const x2 = Math.max(startX, pos.x); const y2 = Math.max(startY, pos.y);
+                    const width = x2 - x1; const height = y2 - y1;
+                    if (width > 3 && height > 3) { // Minimum size check
+                        shapes.push({ type: 'box', data: { x: x1, y: y1, w: width, h: height } });
+                        console.log(`Finished box shape at (${x1.toFixed(1)}, ${y1.toFixed(1)}), size ${width.toFixed(1)}x${height.toFixed(1)}.`);
+                    } else { console.log("Box too small."); }
+                    startX = startY = undefined; // Reset box start
+                }
+                redrawCanvas(); // Redraw final shape
+                updateButtonStates(); // Update button states (enable Process if needed)
+            }
+            // Reset polygon interaction flag if it was somehow set
+            if (isAddingPolygonPoint) { isAddingPolygonPoint = false; }
+        });
+
+        canvas.addEventListener('mouseleave', (e) => {
+            // If dragging brush/box off canvas, finalize the shape
+            if (isDrawing && (currentTool === 'brush' || currentTool === 'box')) {
+                console.log("Mouse left while drawing, finalizing shape.");
+                 // Create a synthetic mouseup event at the last known cursor position (currentX/Y)
+                 // This ensures the shape is completed properly
+                 const mouseUpEvent = new MouseEvent('mouseup', {
+                     bubbles: true,
+                     cancelable: true,
+                     clientX: e.clientX, // Use event's clientX/Y for consistency
+                     clientY: e.clientY,
+                     button: 0 // Left button
+                 });
+                 canvas.dispatchEvent(mouseUpEvent);
+            }
+            // Clear cursor position for polygon line preview when mouse leaves
+            currentX = undefined; currentY = undefined;
+            if (currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+                redrawCanvas(); // Redraw to remove the line-to-cursor
+            }
+        });
+
+        canvas.addEventListener('mouseenter', (e) => {
+            // Update cursor position when re-entering, important for polygon line preview
              if (!isDrawing && currentTool === 'polygon' && currentPolygonPoints.length > 0) {
-                 const pos = getMousePos(e);
+                 const pos = getEventPos(e);
                  currentX = pos.x; currentY = pos.y;
                  redrawCanvas();
              }
          });
 
-    } else { console.error("Canvas context not found!"); }
+         // --- Touch Events ---
+         let touchIdentifier = null; // Track the primary touch for drawing
 
-    // --- Form Submit ---
-    if (formFile) {
-        formFile.addEventListener('submit', (event) => {
-            event.preventDefault(); if (!currentFile) { showError("Select file first."); return; } if (shapes.length === 0) { showError("Mark object(s) first."); return; }
-            let oW, oH; const previewEl = isVideoFile ? videoPreview : imagePreview;
-            if (isVideoFile) { oW = previewEl.videoWidth; oH = previewEl.videoHeight; } else { oW = previewEl.naturalWidth; oH = previewEl.naturalHeight; }
-            if (!oW || !oH || oW <= 0 || oH <= 0) { showError("Cannot get original dimensions. Is preview loaded?"); return; }
-            const tempCanvas = document.createElement('canvas'); tempCanvas.width = oW; tempCanvas.height = oH; const tempCtx = tempCanvas.getContext('2d',{ willReadFrequently: false }); // Set willReadFrequently if needed, maybe false is ok
-            if (!tempCtx) { showError("Cannot create mask canvas."); return; }
-            console.log(`Generating mask at ${oW}x${oH}...`); tempCtx.fillStyle = 'black'; tempCtx.fillRect(0, 0, oW, oH); tempCtx.strokeStyle = 'white'; tempCtx.fillStyle = 'white'; tempCtx.lineCap = 'round'; tempCtx.lineJoin = 'round';
-            shapes.forEach(s => { // Draw all shapes onto scaled mask canvas
-                tempCtx.beginPath(); // Start new path for each shape
-                if (s.type === 'brush' && s.data.length >= 2) { const sSize = Math.max(1, Math.round(s.size*Math.min(scaleX,scaleY))); tempCtx.lineWidth = sSize; tempCtx.moveTo(s.data[0].x*scaleX, s.data[0].y*scaleY); for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); } tempCtx.stroke(); }
-                else if (s.type === 'box' && s.data) { tempCtx.fillRect(s.data.x*scaleX, s.data.y*scaleY, s.data.w*scaleX, s.data.h*scaleY); }
-                else if (s.type === 'polygon' && s.data.length >= 3) { tempCtx.moveTo(s.data[0].x*scaleX, s.data[0].y*scaleY); for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); } tempCtx.closePath(); tempCtx.fill(); }
+         canvas.addEventListener('touchstart', (e) => {
+             if (!currentFile) return;
+             // Only handle single touch for drawing initiation
+             if (e.touches.length === 1) {
+                 e.preventDefault(); // Prevent default scroll/zoom only when drawing starts
+                 touchIdentifier = e.touches[0].identifier;
+                 // Dispatch simulated mousedown
+                 const mouseDownEvent = new MouseEvent('mousedown', {
+                     bubbles: true, cancelable: true, clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, button: 0
+                 });
+                 canvas.dispatchEvent(mouseDownEvent);
+             }
+             // Ignore multi-touch for now
+         }, { passive: false }); // Required to call preventDefault
+
+         canvas.addEventListener('touchmove', (e) => {
+             if (!currentFile || touchIdentifier === null) return; // Only track if a touch drawing started
+             // Find the tracked touch
+             let trackedTouch = null;
+             for (let i = 0; i < e.touches.length; i++) {
+                 if (e.touches[i].identifier === touchIdentifier) {
+                     trackedTouch = e.touches[i];
+                     break;
+                 }
+             }
+             if (trackedTouch) {
+                 e.preventDefault(); // Prevent scrolling while drawing
+                 // Dispatch simulated mousemove
+                 const mouseMoveEvent = new MouseEvent('mousemove', {
+                     bubbles: true, cancelable: true, clientX: trackedTouch.clientX, clientY: trackedTouch.clientY
+                 });
+                 canvas.dispatchEvent(mouseMoveEvent);
+             }
+         }, { passive: false }); // Required to call preventDefault
+
+         const touchEndHandler = (e) => {
+             if (!currentFile || touchIdentifier === null) return;
+             // Find if the ended touch was the one we were tracking
+             let trackedTouchEnded = false;
+             let endClientX, endClientY;
+             for (let i = 0; i < e.changedTouches.length; i++) {
+                 if (e.changedTouches[i].identifier === touchIdentifier) {
+                     trackedTouchEnded = true;
+                     endClientX = e.changedTouches[i].clientX;
+                     endClientY = e.changedTouches[i].clientY;
+                     break;
+                 }
+             }
+             if (trackedTouchEnded) {
+                 e.preventDefault();
+                 // Dispatch simulated mouseup
+                 const mouseUpEvent = new MouseEvent('mouseup', {
+                     bubbles: true, cancelable: true, clientX: endClientX, clientY: endClientY, button: 0
+                 });
+                 canvas.dispatchEvent(mouseUpEvent);
+                 touchIdentifier = null; // Stop tracking
+             }
+         };
+
+         canvas.addEventListener('touchend', touchEndHandler);
+         canvas.addEventListener('touchcancel', (e) => { // Handle interruptions
+             console.log("Touch Cancelled");
+             touchEndHandler(e); // Treat cancel like end for finalization
+             // Optionally add more specific cancel logic if needed
+             touchIdentifier = null;
+             isDrawing = false;
+             isAddingPolygonPoint = false;
+             // Consider resetting startX/Y etc. if needed
+         });
+
+    };
+
+
+    // --- Form Submission ---
+    const setupFormSubmit = () => {
+        if (formFile) {
+            formFile.addEventListener('submit', (event) => {
+                event.preventDefault(); // We handle submission via fetch
+
+                // --- Validations ---
+                if (!currentFile) { showError("Select a file first."); return; }
+                if (shapes.length === 0) { showError("Mark the object(s) to remove first."); return; }
+                if (originalWidth <= 0 || originalHeight <= 0) {
+                    showError("Cannot get original media dimensions. Wait for preview or reload file."); return;
+                }
+
+                // --- Generate Mask Canvas at Original Dimensions ---
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = originalWidth;
+                tempCanvas.height = originalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                if (!tempCtx) { showError("Cannot create mask canvas context."); return; }
+
+                console.log(`Generating mask at ${originalWidth}x${originalHeight}...`);
+                tempCtx.fillStyle = 'black'; // Mask background is black
+                tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+                tempCtx.strokeStyle = 'white'; // Shapes are white
+                tempCtx.fillStyle = 'white';
+                tempCtx.lineCap = 'round'; tempCtx.lineJoin = 'round';
+
+                // Draw shapes onto mask, scaling coordinates from display size (CSS px) to original size
+                shapes.forEach(s => {
+                    tempCtx.save();
+                    tempCtx.beginPath();
+                    if (s.type === 'brush' && s.data.length >= 2) {
+                         // Scale brush size based on the calculated scaling factors
+                         const avgScale = (scaleX + scaleY) / 2; // Use average scale
+                         tempCtx.lineWidth = Math.max(1, Math.round(s.size * avgScale));
+                         // Scale points
+                         tempCtx.moveTo(s.data[0].x * scaleX, s.data[0].y * scaleY);
+                         for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); }
+                         tempCtx.stroke();
+                    } else if (s.type === 'box' && s.data) {
+                         // Scale box position and dimensions
+                         tempCtx.fillRect(s.data.x*scaleX, s.data.y*scaleY, s.data.w*scaleX, s.data.h*scaleY);
+                    } else if (s.type === 'polygon' && s.data.length >= 3 && s.closed) {
+                         // Scale polygon points
+                         tempCtx.moveTo(s.data[0].x*scaleX, s.data[0].y*scaleY);
+                         for (let i=1; i<s.data.length; i++) { tempCtx.lineTo(s.data[i].x*scaleX, s.data[i].y*scaleY); }
+                         tempCtx.closePath();
+                         tempCtx.fill();
+                    }
+                    tempCtx.restore();
+                });
+
+                // Get mask as base64 PNG
+                const maskDataURL = tempCanvas.toDataURL('image/png');
+                if (!maskDataURL || maskDataURL === 'data:,') { showError("Failed to generate mask data."); return; }
+                console.log(`Generated mask data URL (${(maskDataURL.length / 1024).toFixed(1)} KB)`);
+
+                // --- Prepare FormData ---
+                const formData = new FormData();
+                formData.append('image_file', currentFile);
+                formData.append('mask_data', maskDataURL);
+                formData.append('blur_amount', currentBlurAmount.toString()); // Send current blur value
+
+                // --- Send API Request ---
+                handleApiRequest('/api/process', { method: 'POST', body: formData });
             });
-            const maskDataURL = tempCanvas.toDataURL('image/png'); const formData = new FormData(); formData.append('image_file', currentFile); formData.append('mask_data', maskDataURL); console.log(`Sending mask data (${(maskDataURL.length / 1024).toFixed(1)} KB)`);
-            handleApiRequest('/api/process', { method: 'POST', body: formData });
-        });
+        }
+    };
+
+    // --- API Request Handling ---
+    const handleApiRequest = async (url, options) => {
+        showFlexElement(loadingIndicator);
+        hideElement(resultsBox); // Hide previous results
+        hideElement(errorMessageDiv); hideElement(successMessageDiv);
+        if (isVideoFile) { showElement(loadingVideoNote); } else { hideElement(loadingVideoNote); }
+
+        try {
+            console.log(`Sending API request to ${url}...`);
+            const response = await fetch(url, options);
+            console.log(`Received response status: ${response.status}`);
+
+            const contentType = response.headers.get("content-type");
+            let data;
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+                console.log('API JSON Response:', data);
+            } else {
+                 const textResponse = await response.text();
+                 console.error('Non-JSON response received:', textResponse.substring(0, 500));
+                 throw new Error(`Server returned non-JSON response (Status: ${response.status}). Check server logs.`);
+            }
+
+            if (!response.ok) { // Check for HTTP error codes (4xx, 5xx)
+                 throw new Error(data?.error || data?.message || `Request failed with status ${response.status}`);
+            }
+
+            // Check application-level status from JSON for potential errors reported by backend logic
+            if (data?.status === 'error') {
+                 throw new Error(data.message || data.error || 'Processing failed on server.');
+            }
+
+            showSuccess(data); // Show success/warning results
+
+        } catch (error) {
+            console.error('API Request Error:', error);
+            showError(error.message || 'Unknown request error.'); // Display error message from caught error
+        } finally {
+            hideElement(loadingIndicator); // Always hide loading indicator
+        }
+    };
+
+    // --- Display API Results ---
+    const showSuccess = (data) => {
+        hideElement(errorMessageDiv); // Ensure error is hidden
+        showElement(resultsBox);
+        showElement(successMessageDiv); // Show success container
+
+        // Status and Message (handle potential missing fields)
+        const status = data?.status || 'unknown';
+        resultStatusP.textContent = `Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`; // Capitalize status
+        resultStatusP.style.color = 'var(--text-color)'; // Default color
+        if (status === 'success') resultStatusP.style.color = 'var(--success-color)';
+        else if (status === 'warning') resultStatusP.style.color = 'var(--warning-color)';
+        // Error status handled by showError, but include here for completeness if needed
+        else if (status === 'error') resultStatusP.style.color = 'var(--error-color)';
+
+        resultMessageP.textContent = `Message: ${data?.message || 'No message received.'}`;
+
+        // Details Section
+        if (data?.details && typeof data.details === 'object') {
+            try {
+                 // Format details into a readable string within a <pre> tag
+                 let detailsText = '';
+                 for (const [key, value] of Object.entries(data.details)) {
+                     // Simple formatting: key: value
+                     detailsText += `${key}: ${JSON.stringify(value)}\n`;
+                 }
+                 resultDetailsDiv.innerHTML = `<pre>${detailsText.trim()}</pre>`;
+            } catch (jsonError) {
+                 console.error("Error formatting details JSON:", jsonError)
+                 resultDetailsDiv.innerHTML = '<pre>Error displaying details.</pre>';
+            }
+            showElement(resultDetailsContainer);
+        } else {
+            hideElement(resultDetailsContainer);
+        }
+
+        // Reset media elements before showing new ones
+        hideElement(resultImageContainer); hideElement(resultImage); resultImage.src = '#';
+        hideElement(resultVideoArea); hideElement(resultVideoPlayer); resultVideoPlayer.src = '';
+        hideElement(downloadBtn); downloadBtn.href = '#'; downloadBtn.removeAttribute('download');
+
+        // Display Result Image
+        if (data?.result_image_data) {
+            console.log("Displaying image result.");
+            resultImage.src = data.result_image_data;
+            showElement(resultImage);
+            showElement(resultImageContainer);
+            downloadBtn.href = data.result_image_data;
+            const fname = data.details?.input_filename || 'image.png';
+            const baseName = fname.split('.').slice(0, -1).join('.') || fname;
+            downloadBtn.setAttribute('download', `processed_${baseName}.png`);
+            showInlineBlockElement(downloadBtn);
+        }
+        // Display Result Video
+        else if (data?.result_video_url) {
+            console.log("Displaying video result player.");
+            resultVideoPlayer.src = data.result_video_url; // URL provided by backend
+            showElement(resultVideoPlayer);
+            showElement(resultVideoArea);
+            downloadBtn.href = data.result_video_url;
+            const fname = data.details?.result_filename || 'video.mp4'; // Use backend filename if provided
+            downloadBtn.setAttribute('download', `processed_${fname}`);
+            showInlineBlockElement(downloadBtn);
+            resultVideoPlayer.load(); // Important: Tell the video player to load the new source
+        }
+        else {
+            console.log("No result image or video data found in success response.");
+             if (status === 'success') { // Only add note if status was success but no output
+                 resultMessageP.textContent += " (Note: No output file was generated).";
+             }
+        }
+    };
+
+    const showError = (message) => {
+        hideElement(successMessageDiv); // Hide success content
+        errorMessageDiv.textContent = `Error: ${message}`;
+        showElement(errorMessageDiv);
+        showElement(resultsBox); // Show the results box to contain the error
+        hideElement(loadingIndicator);
+        // Ensure media placeholders are hidden on error
+        hideElement(resultImageContainer); hideElement(resultImage);
+        hideElement(resultVideoArea); hideElement(resultVideoPlayer);
+        hideElement(downloadBtn);
+    };
+
+    // --- Initialization ---
+    const initializeApp = () => {
+        console.log("Initializing Object Remover App...");
+        if (!canvas || !ctx) {
+             console.error("CRITICAL: Canvas or rendering context not found. Drawing will not work.");
+             showError("Failed to initialize the drawing canvas. Please refresh the page or try a different browser.");
+             // You might want to disable more UI elements here if the canvas is fundamental
+             if (formFile) formFile.style.pointerEvents = 'none'; // Disable form interactions
+             return; // Stop initialization
+        }
+        setupTheme();
+        setupFileInputs();
+        setupButtonListeners();
+        setupToolSelection();
+        setupOptionSliders();
+        setupCanvasEventListeners();
+        setupFormSubmit();
+        clearAll(); // Start with a clean initial state
+        console.log("Initialization complete.");
     }
 
-    // --- API Request ---
-    const handleApiRequest = async (url, options) => { showFlexElement(loadingIndicator); hideElement(resultsBox); errorMessageDiv.textContent = ''; try { const response = await fetch(url, options); const contentType = response.headers.get("content-type"); let data; if (contentType && contentType.indexOf("application/json")!==-1) { data = await response.json(); } else { const text = await response.text(); throw new Error(`Server non-JSON (Status: ${response.status}). Logs: ${text.substring(0,100)}`); } if (!response.ok) { throw new Error(data.error || `HTTP error ${response.status}`); } console.log('Backend Response:', data); showSuccess(data); } catch (error) { console.error('API Error:', error); showError(error.message || 'Unknown request error.'); } finally { hideElement(loadingIndicator); } };
-    // --- Display Success ---
-    const showSuccess = (data) => { showElement(resultsBox); showElement(successMessageDiv); hideElement(errorMessageDiv); resultStatusP.textContent = `Status: ${data.status||'Success'}`; resultStatusP.style.color = data.status==='warning'?'var(--accent-color)':'var(--success-color)'; resultMessageP.textContent = `Message: ${data.message||'Complete.'}`; if (data.details && typeof data.details === 'object') { resultDetailsDiv.innerHTML = `<pre>${JSON.stringify(data.details,null,2)}</pre>`; showElement(resultDetailsDiv); } else { hideElement(resultDetailsDiv); } hideElement(resultImageContainer); hideElement(resultImage); resultImage.src = '#'; hideElement(resultVideoArea); hideElement(resultVideoPlayer); resultVideoPlayer.src = ''; hideElement(downloadBtn);
-        if (data.result_image_data) { console.log("Displaying image result."); resultImage.src = data.result_image_data; showElement(resultImage); showElement(resultImageContainer); downloadBtn.href = data.result_image_data; const fname = data.details?.input_filename||'image.png'; downloadBtn.setAttribute('download', `processed_${fname.split('.')[0]}.png`); showElement(downloadBtn); }
-        else if (data.result_video_url) { console.log("Displaying video result player."); resultVideoPlayer.src = data.result_video_url; showElement(resultVideoPlayer); showElement(resultVideoArea); downloadBtn.href = data.result_video_url; const fname = data.details?.result_filename || 'video.mp4'; downloadBtn.setAttribute('download', `processed_${fname}`); showElement(downloadBtn); }
-        else { console.log("No result media found."); if(data.status==='success'){ resultMessageP.textContent+=" (No output file)"; } }
-    };
-    // --- Display Error ---
-    const showError = (message) => { hideElement(successMessageDiv); errorMessageDiv.textContent = `Error: ${message}`; showElement(errorMessageDiv); showElement(resultsBox); hideElement(loadingIndicator); hideElement(resultImage); hideElement(resultImageContainer); hideElement(resultVideoArea); hideElement(resultVideoPlayer); hideElement(downloadBtn); };
-    // --- Initial State ---
-    if(processBtn) processBtn.disabled = true; hideElement(previewContainer); hideElement(resultsBox); hideElement(loadingIndicator); console.log("Page loaded."); if(toolRadios.length > 0) toolRadios[0].checked = true; // Ensure brush is default tool visually too showElement(brushControls); hideElement(polygonControls); // Show default controls
-});
-</script>
+    // Run Initialization when the DOM is ready
+    initializeApp();
+
+}); // End DOMContentLoaded
+    </script>
+
+    <!-- Link External JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
 </body>
 </html>
